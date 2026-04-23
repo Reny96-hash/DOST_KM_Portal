@@ -6,9 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
         Schema::create('tbl_users', function (Blueprint $table) {
+            // Primary key
             $table->id('user_id');
 
             // Employee information
@@ -26,12 +27,18 @@ return new class extends Migration
             $table->timestamp('user_password_temp_expires')->nullable();
             $table->boolean('user_must_change_password')->default(true);
 
-            // Security
-            $table->string('security_clearance', 20)->default('Internal');
-            $table->string('user_role', 20)->default('staff');
-            $table->string('user_status', 20)->default('active');
+            // Security and roles
+            $table->enum('security_clearance', [
+                'Public', 'Internal', 'Confidential', 'Secret', 'Top Secret'
+            ])->default('Internal');
 
-            // Security features
+            $table->enum('user_role', [
+                'staff', 'info_owner', 'km_champion', 'edts_admin', 'director', 'admin'
+            ])->default('staff');
+
+            $table->enum('user_status', ['active', 'disabled', 'pending'])->default('pending');
+
+            // Security features (brute force protection)
             $table->integer('login_attempts')->default(0);
             $table->timestamp('locked_until')->nullable();
             $table->timestamp('last_login_at')->nullable();
@@ -42,6 +49,7 @@ return new class extends Migration
             $table->unsignedBigInteger('approved_by')->nullable();
             $table->timestamp('approved_at')->nullable();
 
+            // Timestamps
             $table->timestamps();
             $table->softDeletes('user_deleted_at');
 
@@ -49,10 +57,11 @@ return new class extends Migration
             $table->index('user_role');
             $table->index('user_status');
             $table->index('user_division');
+            $table->index('user_email');
         });
     }
 
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('tbl_users');
     }
