@@ -70,22 +70,7 @@ Visit: `http://127.0.0.1:8000`
 | Role | Email | Password |
 |------|-------|----------|
 | Admin | admin@dost.gov.ph | Admin@1234 |
-| KM Champion | kmchampion@dost.gov.ph | KMChampion@1234 |
 
-##  Features Implemented
-
-- [x] User Authentication (Login/Logout)
-- [x] DOST Email Validation (@dost.gov.ph)
-- [x] Password Complexity (8+ chars, upper, lower, number, special)
-- [x] Brute Force Protection (3 attempts = 15-minute lockout)
-- [x] Role-Based Access Control (staff, info_owner, km_champion, edts_admin, director, admin)
-- [x] Security Classifications (Public, Internal, Confidential, Secret, Top Secret)
-- [x] Document Upload with Metadata
-- [x] Search by Title/Description
-- [x] Category Filter
-- [x] Admin User Management (Create, Edit, Delete)
-- [x] KM Champion Approval Workflow
-- [x] DOST Branding
 
 ##  Database Tables
 
