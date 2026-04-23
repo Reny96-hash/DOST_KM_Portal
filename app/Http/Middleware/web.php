@@ -6,42 +6,25 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\PasswordChangeController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\UserManagementController;
 
-
-
+// Guest routes
 Route::get('/', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login'])->name('login.post');
+Route::post('/login', [LoginController::class, 'login']);
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// Admin User Management Routes
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/users', [UserManagementController::class, 'index'])->name('users');
-    Route::get('/users/{id}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
-    Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('users.update');
-    Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
-});
-Route::get('/test-mailtrap', function () {
-    try {
-        Mail::raw('This is a test email from DOST KM Portal', function ($message) {
-            $message->to('test@dost.gov.ph')
-                    ->subject('Test Email');
-        });
-        return 'Email sent to Mailtrap! Check your Mailtrap inbox.';
-    } catch (\Exception $e) {
-        return 'Error: ' . $e->getMessage();
-    }
-});
+// Authenticated routes
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/change-password', [PasswordChangeController::class, 'showForm'])->name('password.change');
     Route::post('/change-password', [PasswordChangeController::class, 'change']);
 
+    // Admin only routes
     Route::middleware('admin')->group(function () {
         Route::get('/register', [UserRegisterController::class, 'showRegisterForm'])->name('register');
         Route::post('/register', [UserRegisterController::class, 'register']);
     });
 
+    // Document routes
     Route::get('/upload', [DocumentController::class, 'uploadForm'])->name('upload.form');
     Route::post('/upload', [DocumentController::class, 'upload'])->name('upload');
     Route::get('/download/{id}', [DocumentController::class, 'download'])->name('download');

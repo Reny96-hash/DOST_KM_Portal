@@ -21,3 +21,37 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+
+# Add these lines to your .gitignore
+
+# Database
+database/*.sqlite
+database/*.sqlite-journal
+
+# Laravel specific
+/bootstrap/cache/*.php
+/public/storage
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+
+# Composer
+composer.lock
+package-lock.json
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE (already have .vscode and .idea, but add)
+*.swp
+*.swo
+*~
+
+# Temporary files
+temp/
+tmp/
+*.tmp

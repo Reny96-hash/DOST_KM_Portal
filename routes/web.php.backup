@@ -1,0 +1,43 @@
+<?php
+
+use App\Http\Controllers\Admin\UserApprovalController;
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
+
+// Public routes
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Admin Approval Routes (Only accessible by KM Champions, Info Owners, Directors)
+    Route::prefix('admin')->name('admin.')->group(function () {
+        // Pending approvals page
+        Route::get('/pending-approvals', [UserApprovalController::class, 'index'])->name('pending');
+
+        // Single approve/reject
+        Route::post('/approve/{id}', [UserApprovalController::class, 'approve'])->name('approve');
+        Route::post('/reject/{id}', [UserApprovalController::class, 'reject'])->name('reject');
+
+        // Bulk approve
+        Route::post('/bulk-approve', [UserApprovalController::class, 'bulkApprove'])->name('bulk-approve');
+    });
+    // ========== END OF APPROVAL ROUTES ==========
+    Route::get('/test-pending', function () {
+    $pendingUsers = App\Models\User::where('user_status', 'pending')->get();
+    echo "<h1>Pending Users Found: " . $pendingUsers->count() . "</h1>";
+    foreach($pendingUsers as $user) {
+        echo "<p>ID: {$user->user_id} - Email: {$user->user_email} - Status: {$user->user_status}</p>";
+    }
+});
+});
+
+require __DIR__.'/auth.php';
