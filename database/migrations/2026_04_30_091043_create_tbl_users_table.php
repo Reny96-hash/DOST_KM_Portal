@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
+    public function up()
     {
         Schema::create('tbl_users', function (Blueprint $table) {
             // Primary key
@@ -25,20 +25,23 @@ return new class extends Migration
             $table->string('user_password_hash', 255);
             $table->string('user_password_temp', 255)->nullable();
             $table->timestamp('user_password_temp_expires')->nullable();
-            $table->boolean('user_must_change_password')->default(true);
+            $table->boolean('user_must_change_password')->default(false);
 
-            // Security and roles
+            // Security Classification
             $table->enum('security_clearance', [
                 'Public', 'Internal', 'Confidential', 'Secret', 'Top Secret'
             ])->default('Internal');
 
+            // Roles - Simplified to 3 roles
             $table->enum('user_role', [
-                'staff', 'info_owner', 'km_champion', 'edts_admin', 'director', 'admin'
+                'staff',        // Regular employee - view/download only
+                'km_champion',  // Knowledge manager - view all, insights
+                'admin'         // System administrator - full control, upload
             ])->default('staff');
 
-            $table->enum('user_status', ['active', 'disabled', 'pending'])->default('pending');
+            $table->enum('user_status', ['active', 'disabled', 'pending'])->default('active');
 
-            // Security features (brute force protection)
+            // Security features
             $table->integer('login_attempts')->default(0);
             $table->timestamp('locked_until')->nullable();
             $table->timestamp('last_login_at')->nullable();
@@ -49,7 +52,6 @@ return new class extends Migration
             $table->unsignedBigInteger('approved_by')->nullable();
             $table->timestamp('approved_at')->nullable();
 
-            // Timestamps
             $table->timestamps();
             $table->softDeletes('user_deleted_at');
 
@@ -58,10 +60,11 @@ return new class extends Migration
             $table->index('user_status');
             $table->index('user_division');
             $table->index('user_email');
+            $table->index('security_clearance');
         });
     }
 
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('tbl_users');
     }

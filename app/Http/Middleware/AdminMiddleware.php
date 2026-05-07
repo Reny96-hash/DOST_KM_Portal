@@ -9,9 +9,14 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!auth()->user() || auth()->user()->user_role !== 'admin') {
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
+
+        if (!auth()->user()->isAdmin()) {
             abort(403, 'Admin access required.');
         }
+
         return $next($request);
     }
 }

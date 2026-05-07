@@ -19,10 +19,11 @@ return new class extends Migration
         // Insert default categories
         DB::table('tbl_categories')->insert([
             ['cat_name' => 'Research Papers', 'created_at' => now(), 'updated_at' => now()],
-            ['cat_name' => 'Policies', 'created_at' => now(), 'updated_at' => now()],
+            ['cat_name' => 'Policies and Guidelines', 'created_at' => now(), 'updated_at' => now()],
             ['cat_name' => 'Project Reports', 'created_at' => now(), 'updated_at' => now()],
             ['cat_name' => 'Technical Guides', 'created_at' => now(), 'updated_at' => now()],
             ['cat_name' => 'Administrative', 'created_at' => now(), 'updated_at' => now()],
+            ['cat_name' => 'Tacit Knowledge', 'created_at' => now(), 'updated_at' => now()],
         ]);
     }
 

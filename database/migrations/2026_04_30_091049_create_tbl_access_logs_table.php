@@ -12,13 +12,18 @@ return new class extends Migration
             $table->id('log_id');
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('doc_id')->nullable();
-            $table->string('action_type', 50);
+            $table->enum('action_type', [
+                'login', 'logout', 'view', 'download', 'upload',
+                'edit', 'delete', 'search', 'failed_login'
+            ]);
             $table->string('ip_address', 45);
             $table->text('user_agent')->nullable();
             $table->text('details')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('user_id')->on('tbl_users')->onDelete('cascade');
+            $table->foreign('doc_id')->references('doc_id')->on('tbl_documents')->onDelete('set null');
+
             $table->index('action_type');
             $table->index('created_at');
             $table->index('user_id');

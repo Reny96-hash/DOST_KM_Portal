@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -15,14 +15,32 @@ class DashboardController extends Controller
 
     public function index()
     {
-        $documents = Document::with('user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $user = auth()->user();
 
-        $categories = ['Research Papers', 'Policies', 'Project Reports', 'Technical Guides', 'Administrative'];
-        $totalDocuments = Document::count();
+        // Get all documents
+        $allDocuments = Document::where('doc_status', 'published')->get();
+
+        // Filter by security clearance
+        $documents = $allDocuments->filter(function($doc) use ($user) {
+            return $user->canViewDocument($doc->security_clearance);
+        });
+
+        $categories = DB::table('tbl_categories')->pluck('cat_name')->toArray();
+
+        // Statistics
+        $totalDocuments = $documents->count();
         $totalUsers = User::count();
+        $recentDocuments = $documents->sortByDesc('created_at')->take(5);
+        $popularDocuments = $documents->sortByDesc('view_count')->take(5);
 
-        return view('dashboard', compact('documents', 'categories', 'totalDocuments', 'totalUsers'));
+        $categoryStats = Document::where('doc_status', 'published')
+            ->select('doc_category', DB::raw('count(*) as count'))
+            ->groupBy('doc_category')
+            ->get();
+
+        return view('dashboard', compact(
+            'documents', 'categories', 'totalDocuments', 'totalUsers',
+            'recentDocuments', 'popularDocuments', 'categoryStats'
+        ));
     }
 }

@@ -1,134 +1,279 @@
 @extends('layouts.app')
 
 @section('content')
-    <div style="max-height: calc(100vh - 150px); overflow-y: auto; padding-right: 5px;">
-        <!-- Welcome Card - Compact -->
-        <div class="card card-box p-3 mb-3">
-            <div class="d-flex justify-content-between align-items-center flex-wrap">
-                <div>
-                    <h4 style="color: #000847; font-size: 1rem; margin: 0;">Welcome, {{ auth()->user()->user_first_name }}!
-                    </h4>
-                    <p class="text-muted" style="font-size: 0.7rem; margin: 2px 0 0 0;">
-                        <strong>Division:</strong> {{ auth()->user()->user_division ?? 'Not specified' }} |
-                        <strong>Role:</strong> {{ ucfirst(auth()->user()->user_role) }}
-                    </p>
-                </div>
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle"></i> {{ auth()->user()->user_first_name }}
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ route('logout') }}"><i class="fas fa-sign-out-alt"></i>
-                                Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+    <div class="container-fluid px-3">
 
-        <!-- Action Cards - Dashboard Only -->
+        <!-- Welcome Bar -->
         <div class="row mb-3">
-            <div class="col-md-6 mb-2">
-                <a href="{{ route('upload.form') }}" class="text-decoration-none">
-                    <div class="card card-box action-card" style="padding: 15px; height: 80px;">
-                        <i class="fas fa-upload" style="font-size: 1.3rem;"></i>
-                        <h6 style="font-size: 0.75rem; margin-top: 5px;">Upload Document</h6>
-                    </div>
-                </a>
-            </div>
-            @if (auth()->user()->user_role == 'admin')
-                <div class="col-md-6 mb-2">
-                    <a href="{{ route('admin.users') }}" class="text-decoration-none">
-                        <div class="card card-box action-card" style="padding: 15px; height: 80px;">
-                            <i class="fas fa-users" style="font-size: 1.3rem;"></i>
-                            <h6 style="font-size: 0.75rem; margin-top: 5px;">Manage Users</h6>
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-semibold">Welcome, {{ auth()->user()->user_first_name }}
+                                {{ auth()->user()->user_last_name }}</span>
+                            <span class="text-muted ms-2 small">Clearance: {{ auth()->user()->security_clearance }}</span>
                         </div>
-                    </a>
-                </div>
-            @endif
-        </div>
-
-        <!-- Document Repository Section -->
-        <div class="card card-box p-3">
-            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
-                <h5 style="color: #000847; font-size: 0.85rem; margin: 0;"><i class="fas fa-database"></i> Document
-                    Repository</h5>
-                <form method="GET" action="{{ route('search') }}" class="d-flex gap-2 flex-wrap">
-                    <div style="position: relative;">
-                        <i class="fas fa-search"
-                            style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.7rem; color: #6c757d;"></i>
-                        <input type="text" name="search" placeholder="Search documents..."
-                            value="{{ request('search') }}"
-                            style="font-size: 0.7rem; padding: 5px 10px 5px 28px; width: 180px; border: 1px solid #ddd; border-radius: 4px;">
+                        @if (auth()->user()->isAdmin())
+                            <div>
+                                <a href="{{ route('upload.form') }}" class="btn btn-sm btn-primary me-1">
+                                    <i class="fas fa-upload"></i> Upload
+                                </a>
+                                <a href="{{ route('admin.users') }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-users"></i> Users
+                                </a>
+                            </div>
+                        @endif
                     </div>
-                    <select name="category"
-                        style="font-size: 0.7rem; padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; background-color: white;">
-                        <option value="">All Categories</option>
-                        @foreach ($categories as $cat)
-                            <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>
-                                {{ $cat }}</option>
-                        @endforeach
-                    </select>
-                    <select name="sort"
-                        style="font-size: 0.7rem; padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; background-color: white;">
-                        <option value="desc" {{ request('sort', 'desc') == 'desc' ? 'selected' : '' }}>Newest First
-                        </option>
-                        <option value="asc" {{ request('sort') == 'asc' ? 'selected' : '' }}>Oldest First</option>
-                    </select>
-                    <button type="submit" class="btn"
-                        style="background-color: #000847; color: white; font-size: 0.7rem; padding: 5px 12px; border: none; border-radius: 4px;">
-                        <i class="fas fa-sliders-h"></i> Sort
-                    </button>
-                    @if (request('search') || request('category') || request('sort'))
-                        <a href="{{ route('dashboard') }}" class="btn"
-                            style="background-color: #6c757d; color: white; font-size: 0.7rem; padding: 5px 12px; border: none; border-radius: 4px; text-decoration: none;">
-                            <i class="fas fa-times"></i> Reset
-                        </a>
-                    @endif
-                </form>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-bordered" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th style="background-color: #000847; color: white; padding: 8px;">Title</th>
-                            <th style="background-color: #000847; color: white; padding: 8px;">Description</th>
-                            <th style="background-color: #000847; color: white; padding: 8px;">Category</th>
-                            <th style="background-color: #000847; color: white; padding: 8px;">Uploaded By</th>
-                            <th style="background-color: #000847; color: white; padding: 8px;">Date</th>
-                            <th style="background-color: #000847; color: white; padding: 8px;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($documents as $doc)
-                            <tr>
-                                <td style="padding: 8px;"><strong>{{ $doc->doc_title }}</strong></td>
-                                <td style="padding: 8px;" title="{{ $doc->doc_description }}">
-                                    {{ Str::limit($doc->doc_description, 60) ?: 'No description' }}
+                </div>
             </div>
         </div>
-        <td style="padding: 8px;">{{ $doc->doc_category }}</td>
-        <td style="padding: 8px;">{{ $doc->user->user_first_name ?? 'Unknown' }}</td>
-        <td style="padding: 8px;">{{ $doc->created_at->format('Y-m-d') }}</td>
-        <td style="padding: 8px;">
-            <a href="{{ route('download', $doc->doc_id) }}" class="btn btn-sm"
-                style="background-color: #000847; color: white; font-size: 0.65rem; padding: 4px 10px; text-decoration: none; border-radius: 4px;">
-                <i class="fas fa-download"></i> Download
-            </a>
-        </td>
-        </tr>
-    @empty
-        <tr>
-            <td colspan="6" class="text-center" style="padding: 20px;">No documents found.</td>
-        </tr>
-        @endforelse
-        </tbody>
-        </table>
-    </div>
 
-    <div class="mt-2">
-        {{ $documents->appends(request()->query())->links() }}
-    </div>
-    </div>
+        <!-- Statistics Cards -->
+        <div class="row g-2 mb-3">
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-2">
+                    <div class="card-body p-2">
+                        <i class="fas fa-file-alt text-secondary fa-lg"></i>
+                        <h4 class="mb-0 mt-1 fw-bold">{{ $approvedDocumentsCount ?? 0 }}</h4>
+                        <small class="text-muted">Approved Documents</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-2">
+                    <div class="card-body p-2">
+                        <i class="fas fa-clock text-secondary fa-lg"></i>
+                        <h4 class="mb-0 mt-1 fw-bold">{{ $pendingDocumentsCount ?? 0 }}</h4>
+                        <small class="text-muted">Pending Approval</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-2">
+                    <div class="card-body p-2">
+                        <i class="fas fa-image text-secondary fa-lg"></i>
+                        <h4 class="mb-0 mt-1 fw-bold">{{ $imagesCount ?? 0 }}</h4>
+                        <small class="text-muted">Images</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 shadow-sm text-center py-2">
+                    <div class="card-body p-2">
+                        <i class="fas fa-tags text-secondary fa-lg"></i>
+                        <h4 class="mb-0 mt-1 fw-bold">{{ count($categories) }}</h4>
+                        <small class="text-muted">Categories</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Second Row Stats -->
+        <!-- Second Row Stats - Only for Admin/KM Champion -->
+        @if (auth()->user()->isAdmin() || auth()->user()->isKmChampion())
+            <div class="row g-2 mb-3">
+                <div class="col-md-3 col-6">
+                    <div class="card border-0 shadow-sm text-center py-2">
+                        <div class="card-body p-2">
+                            <i class="fas fa-users text-secondary fa-lg"></i>
+                            <h4 class="mb-0 mt-1 fw-bold">{{ $totalUsers ?? 1 }}</h4>
+                            <small class="text-muted">Total Users</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card border-0 shadow-sm text-center py-2">
+                        <div class="card-body p-2">
+                            <i class="fas fa-star text-secondary fa-lg"></i>
+                            <h4 class="mb-0 mt-1 fw-bold">{{ $kmChampionCount ?? 0 }}</h4>
+                            <small class="text-muted">KM Champions</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card border-0 shadow-sm text-center py-2">
+                        <div class="card-body p-2">
+                            <i class="fas fa-shield-alt text-secondary fa-lg"></i>
+                            <h4 class="mb-0 mt-1 fw-bold">{{ $adminCount ?? 0 }}</h4>
+                            <small class="text-muted">Admins</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card border-0 shadow-sm text-center py-2">
+                        <div class="card-body p-2">
+                            <i class="fas fa-user text-secondary fa-lg"></i>
+                            <h4 class="mb-0 mt-1 fw-bold">{{ $staffCount ?? 0 }}</h4>
+                            <small class="text-muted">Staff</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Recently Added & Most Viewed -->
+        <div class="row mb-3 g-2">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-2 border-0">
+                        <small class="fw-semibold text-muted">RECENTLY ADDED</small>
+                    </div>
+                    <div class="card-body p-2">
+                        @if (isset($recentDocuments) && $recentDocuments->count() > 0)
+                            @foreach ($recentDocuments as $doc)
+                                <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-file-alt text-secondary fa-sm"></i>
+                                        <span class="small">{{ Str::limit($doc->doc_title, 35) }}</span>
+                                    </div>
+                                    <small class="text-muted">{{ $doc->created_at->diffForHumans() }}</small>
+                                </div>
+                            @endforeach
+                        @else
+                            <p class="text-muted small text-center py-2 mb-0">No approved documents yet</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-2 border-0">
+                        <small class="fw-semibold text-muted">MOST VIEWED</small>
+                    </div>
+                    <div class="card-body p-2">
+                        @if (isset($mostViewedDocuments) && $mostViewedDocuments->count() > 0)
+                            @foreach ($mostViewedDocuments as $doc)
+                                <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-chart-simple text-secondary fa-sm"></i>
+                                        <span class="small">{{ Str::limit($doc->doc_title, 35) }}</span>
+                                    </div>
+                                    <small class="text-muted">{{ $doc->view_count }} views</small>
+                                </div>
+                            @endforeach
+                        @else
+                            <p class="text-muted small text-center py-2 mb-0">No view data yet</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Repository Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-2 border-0">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <small class="fw-semibold text-muted">DOCUMENT REPOSITORY (Approved Only)</small>
+                            <form method="GET" action="{{ route('search') }}" class="d-flex gap-2">
+                                <input type="text" name="search" class="form-control form-control-sm"
+                                    placeholder="Search..." value="{{ request('search') }}" style="width: 180px;">
+                                <select name="category" class="form-select form-select-sm" style="width: 130px;">
+                                    <option value="">All Categories</option>
+                                    @foreach ($categories as $cat)
+                                        <option value="{{ $cat }}"
+                                            {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary">Search</button>
+                                @if (request('search') || request('category'))
+                                    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+                                @endif
+                            </form>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (isset($paginatedDocuments) && $paginatedDocuments->count() > 0)
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-3">Title</th>
+                                            <th>Type</th>
+                                            <th>Category</th>
+                                            <th>Classification</th>
+                                            <th>Date</th>
+                                            <th class="text-end pe-3">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($paginatedDocuments as $doc)
+                                            <tr>
+                                                <td class="ps-3">
+                                                    <span class="fw-medium">{{ $doc->doc_title }}</span>
+                                                    <br><small
+                                                        class="text-muted">{{ Str::limit($doc->doc_description, 55) }}</small>
+                                                </td>
+                                                <td class="align-middle">{{ strtoupper($doc->doc_file_type) }}</td>
+                                                <td class="align-middle">{{ $doc->doc_category }}</td>
+                                                <td class="align-middle">{{ $doc->security_clearance }}</td>
+                                                <td class="align-middle">{{ $doc->created_at->format('Y-m-d') }}</td>
+                                                <td class="align-middle text-end pe-3">
+                                                    @if (in_array($doc->doc_file_type, ['jpg', 'jpeg', 'png', 'gif']))
+                                                        <button type="button" class="btn btn-sm btn-outline-info me-1"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#previewModal{{ $doc->doc_id }}"
+                                                            title="Preview">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+
+                                                        <!-- Modal -->
+                                                        <div class="modal fade" id="previewModal{{ $doc->doc_id }}"
+                                                            tabindex="-1">
+                                                            <div class="modal-dialog modal-lg">
+                                                                <div class="modal-content">
+                                                                    <div class="modal-header">
+                                                                        <h6 class="modal-title">{{ $doc->doc_title }}</h6>
+                                                                        <button type="button" class="btn-close"
+                                                                            data-bs-dismiss="modal"></button>
+                                                                    </div>
+                                                                    <div class="modal-body text-center">
+                                                                        <img src="{{ route('preview', $doc->doc_id) }}"
+                                                                            class="img-fluid"
+                                                                            alt="{{ $doc->doc_title }}">
+                                                                    </div>
+                                                                    <div class="modal-footer">
+                                                                        <a href="{{ route('download', $doc->doc_id) }}"
+                                                                            class="btn btn-sm btn-primary">Download</a>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-secondary"
+                                                                            data-bs-dismiss="modal">Close</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @elseif($doc->doc_file_type == 'pdf')
+                                                        <a href="{{ route('download', $doc->doc_id) }}"
+                                                            class="btn btn-sm btn-outline-info me-1" title="Download PDF">
+                                                            <i class="fas fa-file-pdf"></i>
+                                                        </a>
+                                                    @endif
+                                                    <a href="{{ route('download', $doc->doc_id) }}"
+                                                        class="btn btn-sm btn-outline-secondary" title="Download">
+                                                        <i class="fas fa-download"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="p-2 border-top">
+                                {{ $paginatedDocuments->links() }}
+                            </div>
+                        @else
+                            <div class="text-center py-4">
+                                <i class="fas fa-folder-open fa-3x text-muted mb-2"></i>
+                                <p class="text-muted small mb-0">No approved documents yet.</p>
+                                <a href="{{ route('upload.form') }}" class="btn btn-sm btn-primary mt-2">Upload
+                                    Document</a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection

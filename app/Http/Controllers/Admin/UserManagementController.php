@@ -12,7 +12,7 @@ class UserManagementController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('admin');
+        $this->middleware('admin'); // Only admin can access
     }
 
     public function index()
@@ -33,12 +33,14 @@ class UserManagementController extends Controller
 
         $request->validate([
             'user_division' => 'nullable|string|max:200',
-            'user_role' => 'required|in:admin,staff,info_owner,km_champion,edts_admin,director',
+            'user_role' => 'required|in:staff,km_champion,admin',
+            'security_clearance' => 'required|in:Public,Internal,Confidential,Secret,Top Secret',
             'user_status' => 'required|in:active,disabled'
         ]);
 
         $user->user_division = $request->user_division;
         $user->user_role = $request->user_role;
+        $user->security_clearance = $request->security_clearance;
         $user->user_status = $request->user_status;
         $user->save();
 
@@ -49,7 +51,6 @@ class UserManagementController extends Controller
     {
         $user = User::findOrFail($id);
 
-        // Prevent admin from deleting themselves
         if ($user->user_id == auth()->user()->user_id) {
             return redirect()->back()->with('error', 'You cannot delete your own account.');
         }
@@ -57,4 +58,5 @@ class UserManagementController extends Controller
         $user->delete();
         return redirect()->route('admin.users')->with('success', 'User deleted successfully');
     }
+
 }

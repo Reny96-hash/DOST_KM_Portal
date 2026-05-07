@@ -1,66 +1,153 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# DOST Knowledge Management Portal
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A centralized knowledge management system for the Department of Science and Technology (DOST) to capture, store, and share institutional knowledge.
 
-## About Laravel
+## Installation
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 1. Clone the Repository
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```bash
+git clone https://github.com/Reny96-hash/DOST_KM_Portal.git
+cd DOST_KM_Portal
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 2. Install Dependencies
 
-## Learning Laravel
+```bash
+composer install
+npm install
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 3. Environment Setup
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 4. Configure Database
 
-## Laravel Sponsors
+Edit `.env` file:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+**For SQLite (Default - No setup needed):**
 
-### Premium Partners
+```env
+DB_CONNECTION=sqlite
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+**For MySQL:**
 
-## Contributing
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=db_kmportal
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 5. Run Migrations
 
-## Code of Conduct
+```bash
+php artisan migrate
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 6. Compile Assets
 
-## Security Vulnerabilities
+```bash
+npm run dev
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 7. Start Server
 
-## License
+```bash
+php artisan serve
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Visit: `http://127.0.0.1:8000`
+
+## Test Login
+
+| Role        | Email                  | Password        |
+| ----------- | ---------------------- | --------------- |
+| Admin       | admin@dost.gov.ph      | Admin@1234      |
+| KM Champion | kmchampion@dost.gov.ph | KMChampion@1234 |
+
+## Features Implemented
+
+- [x] User Authentication (Login/Logout)
+- [x] DOST Email Validation (@dost.gov.ph)
+- [x] Password Complexity (8+ chars, upper, lower, number, special)
+- [x] Brute Force Protection (3 attempts = 15-minute lockout)
+- [x] Role-Based Access Control (staff, info_owner, km_champion, edts_admin, director, admin)
+- [x] Security Classifications (Public, Internal, Confidential, Secret, Top Secret)
+- [x] Document Upload with Metadata
+- [x] Search by Title/Description
+- [x] Category Filter
+- [x] Admin User Management (Create, Edit, Delete)
+- [x] KM Champion Approval Workflow
+- [x] DOST Branding
+
+## Database Tables
+
+| Table           | Purpose                 |
+| --------------- | ----------------------- |
+| tbl_users       | User accounts and roles |
+| tbl_documents   | Knowledge assets        |
+| tbl_categories  | Document categories     |
+| tbl_access_logs | Audit trail             |
+| sessions        | Session management      |
+
+## Commands Reference
+
+```bash
+# Start server
+php artisan serve
+
+# Run migrations
+php artisan migrate
+
+# Clear cache
+php artisan cache:clear
+php artisan config:clear
+php artisan view:clear
+
+# Create admin user (if needed)
+php artisan tinker
+```
+
+Then in tinker:
+
+```php
+use App\Models\User;
+User::create([
+    'emp_id' => 'ADMIN-001',
+    'user_first_name' => 'Admin',
+    'user_last_name' => 'User',
+    'user_email' => 'admin@dost.gov.ph',
+    'user_password_hash' => bcrypt('Admin@1234'),
+    'security_clearance' => 'Top Secret',
+    'user_role' => 'admin',
+    'user_status' => 'active',
+]);
+exit;
+```
+
+## Project Structure
+
+```
+dost-km-portal/
+├── app/
+│   ├── Http/Controllers/     # Controllers
+│   ├── Models/               # User, Document models
+│   └── Http/Middleware/      # AdminMiddleware
+├── database/migrations/      # Database tables
+├── resources/views/          # Blade templates
+│   ├── layouts/app.blade.php
+│   ├── login.blade.php
+│   ├── dashboard.blade.php
+│   └── upload.blade.php
+└── routes/web.php            # All routes
+```
+
+---
