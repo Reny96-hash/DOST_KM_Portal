@@ -15,12 +15,10 @@
                         </div>
                         @if (auth()->user()->isAdmin())
                             <div>
-                                <a href="{{ route('upload.form') }}" class="btn btn-sm btn-primary me-1">
-                                    <i class="fas fa-upload"></i> Upload
-                                </a>
-                                <a href="{{ route('admin.users') }}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="fas fa-users"></i> Users
-                                </a>
+                                <a href="{{ route('upload.form') }}" class="btn btn-sm btn-primary me-1"><i
+                                        class="fas fa-upload"></i> Upload</a>
+                                <a href="{{ route('admin.users') }}" class="btn btn-sm btn-outline-secondary"><i
+                                        class="fas fa-users"></i> Users</a>
                             </div>
                         @endif
                     </div>
@@ -35,7 +33,7 @@
                     <div class="card-body p-2">
                         <i class="fas fa-file-alt text-secondary fa-lg"></i>
                         <h4 class="mb-0 mt-1 fw-bold">{{ $approvedDocumentsCount ?? 0 }}</h4>
-                        <small class="text-muted">Approved Documents</small>
+                        <small class="text-muted">Approved Docs</small>
                     </div>
                 </div>
             </div>
@@ -44,7 +42,7 @@
                     <div class="card-body p-2">
                         <i class="fas fa-clock text-secondary fa-lg"></i>
                         <h4 class="mb-0 mt-1 fw-bold">{{ $pendingDocumentsCount ?? 0 }}</h4>
-                        <small class="text-muted">Pending Approval</small>
+                        <small class="text-muted">Pending</small>
                     </div>
                 </div>
             </div>
@@ -60,23 +58,22 @@
             <div class="col-md-3 col-6">
                 <div class="card border-0 shadow-sm text-center py-2">
                     <div class="card-body p-2">
-                        <i class="fas fa-tags text-secondary fa-lg"></i>
-                        <h4 class="mb-0 mt-1 fw-bold">{{ count($categories) }}</h4>
-                        <small class="text-muted">Categories</small>
+                        <i class="fas fa-user-folder text-secondary fa-lg"></i>
+                        <h4 class="mb-0 mt-1 fw-bold">{{ $myDocumentsCount ?? 0 }}</h4>
+                        <small class="text-muted">My Documents</small>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Second Row Stats -->
-        <!-- Second Row Stats - Only for Admin/KM Champion -->
+        <!-- Admin/KM Champion extra stats -->
         @if (auth()->user()->isAdmin() || auth()->user()->isKmChampion())
             <div class="row g-2 mb-3">
                 <div class="col-md-3 col-6">
                     <div class="card border-0 shadow-sm text-center py-2">
                         <div class="card-body p-2">
                             <i class="fas fa-users text-secondary fa-lg"></i>
-                            <h4 class="mb-0 mt-1 fw-bold">{{ $totalUsers ?? 1 }}</h4>
+                            <h4 class="mb-0 mt-1 fw-bold">{{ $totalUsers ?? 0 }}</h4>
                             <small class="text-muted">Total Users</small>
                         </div>
                     </div>
@@ -115,11 +112,10 @@
         <div class="row mb-3 g-2">
             <div class="col-md-6">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-2 border-0">
-                        <small class="fw-semibold text-muted">RECENTLY ADDED</small>
-                    </div>
+                    <div class="card-header bg-white py-2 border-0"><small class="fw-semibold text-muted">RECENTLY
+                            ADDED</small></div>
                     <div class="card-body p-2">
-                        @if (isset($recentDocuments) && $recentDocuments->count() > 0)
+                        @if (isset($recentDocuments) && $recentDocuments->count())
                             @foreach ($recentDocuments as $doc)
                                 <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
                                     <div class="d-flex align-items-center gap-2">
@@ -137,11 +133,10 @@
             </div>
             <div class="col-md-6">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-2 border-0">
-                        <small class="fw-semibold text-muted">MOST VIEWED</small>
-                    </div>
+                    <div class="card-header bg-white py-2 border-0"><small class="fw-semibold text-muted">MOST
+                            VIEWED</small></div>
                     <div class="card-body p-2">
-                        @if (isset($mostViewedDocuments) && $mostViewedDocuments->count() > 0)
+                        @if (isset($mostViewedDocuments) && $mostViewedDocuments->count())
                             @foreach ($mostViewedDocuments as $doc)
                                 <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
                                     <div class="d-flex align-items-center gap-2">
@@ -159,121 +154,91 @@
             </div>
         </div>
 
-        <!-- Document Repository Table -->
+        <!-- Document Repository with Dynamic Filters -->
         <div class="row">
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white py-2 border-0">
                         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <small class="fw-semibold text-muted">DOCUMENT REPOSITORY (Approved Only)</small>
-                            <form method="GET" action="{{ route('search') }}" class="d-flex gap-2">
-                                <input type="text" name="search" class="form-control form-control-sm"
-                                    placeholder="Search..." value="{{ request('search') }}" style="width: 180px;">
-                                <select name="category" class="form-select form-select-sm" style="width: 130px;">
+                            <div class="d-flex gap-2 align-items-center">
+                                <select id="sort-select" class="form-select form-select-sm" style="width:130px">
+                                    <option value="newest" {{ request('sort', 'newest') == 'newest' ? 'selected' : '' }}>
+                                        Newest First</option>
+                                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest First
+                                    </option>
+                                </select>
+                                <input type="text" id="search-input" class="form-control form-control-sm"
+                                    placeholder="Search..." style="width:180px" value="{{ request('search') }}">
+                                <select id="category-select" class="form-select form-select-sm" style="width:130px">
                                     <option value="">All Categories</option>
                                     @foreach ($categories as $cat)
                                         <option value="{{ $cat }}"
-                                            {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}
-                                        </option>
+                                            {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                                     @endforeach
                                 </select>
-                                <button type="submit" class="btn btn-sm btn-primary">Search</button>
-                                @if (request('search') || request('category'))
-                                    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
-                                @endif
-                            </form>
+                                <button id="reset-btn" class="btn btn-sm btn-outline-secondary">Reset</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="card-body p-0">
-                        @if (isset($paginatedDocuments) && $paginatedDocuments->count() > 0)
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="ps-3">Title</th>
-                                            <th>Type</th>
-                                            <th>Category</th>
-                                            <th>Classification</th>
-                                            <th>Date</th>
-                                            <th class="text-end pe-3">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($paginatedDocuments as $doc)
-                                            <tr>
-                                                <td class="ps-3">
-                                                    <span class="fw-medium">{{ $doc->doc_title }}</span>
-                                                    <br><small
-                                                        class="text-muted">{{ Str::limit($doc->doc_description, 55) }}</small>
-                                                </td>
-                                                <td class="align-middle">{{ strtoupper($doc->doc_file_type) }}</td>
-                                                <td class="align-middle">{{ $doc->doc_category }}</td>
-                                                <td class="align-middle">{{ $doc->security_clearance }}</td>
-                                                <td class="align-middle">{{ $doc->created_at->format('Y-m-d') }}</td>
-                                                <td class="align-middle text-end pe-3">
-                                                    @if (in_array($doc->doc_file_type, ['jpg', 'jpeg', 'png', 'gif']))
-                                                        <button type="button" class="btn btn-sm btn-outline-info me-1"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#previewModal{{ $doc->doc_id }}"
-                                                            title="Preview">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-
-                                                        <!-- Modal -->
-                                                        <div class="modal fade" id="previewModal{{ $doc->doc_id }}"
-                                                            tabindex="-1">
-                                                            <div class="modal-dialog modal-lg">
-                                                                <div class="modal-content">
-                                                                    <div class="modal-header">
-                                                                        <h6 class="modal-title">{{ $doc->doc_title }}</h6>
-                                                                        <button type="button" class="btn-close"
-                                                                            data-bs-dismiss="modal"></button>
-                                                                    </div>
-                                                                    <div class="modal-body text-center">
-                                                                        <img src="{{ route('preview', $doc->doc_id) }}"
-                                                                            class="img-fluid"
-                                                                            alt="{{ $doc->doc_title }}">
-                                                                    </div>
-                                                                    <div class="modal-footer">
-                                                                        <a href="{{ route('download', $doc->doc_id) }}"
-                                                                            class="btn btn-sm btn-primary">Download</a>
-                                                                        <button type="button"
-                                                                            class="btn btn-sm btn-secondary"
-                                                                            data-bs-dismiss="modal">Close</button>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    @elseif($doc->doc_file_type == 'pdf')
-                                                        <a href="{{ route('download', $doc->doc_id) }}"
-                                                            class="btn btn-sm btn-outline-info me-1" title="Download PDF">
-                                                            <i class="fas fa-file-pdf"></i>
-                                                        </a>
-                                                    @endif
-                                                    <a href="{{ route('download', $doc->doc_id) }}"
-                                                        class="btn btn-sm btn-outline-secondary" title="Download">
-                                                        <i class="fas fa-download"></i>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="p-2 border-top">
-                                {{ $paginatedDocuments->links() }}
-                            </div>
-                        @else
-                            <div class="text-center py-4">
-                                <i class="fas fa-folder-open fa-3x text-muted mb-2"></i>
-                                <p class="text-muted small mb-0">No approved documents yet.</p>
-                                <a href="{{ route('upload.form') }}" class="btn btn-sm btn-primary mt-2">Upload
-                                    Document</a>
-                            </div>
-                        @endif
+                    <div class="card-body p-0" id="document-table-container">
+                        @include('partials.document-table', ['paginatedDocuments' => $paginatedDocuments])
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- jQuery and AJAX script -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function fetchDocuments(page = 1) {
+            let search = $('#search-input').val();
+            let category = $('#category-select').val();
+            let sort = $('#sort-select').val();
+
+            $.ajax({
+                url: "{{ route('documents.fetch') }}",
+                type: "GET",
+                data: {
+                    search: search,
+                    category: category,
+                    sort: sort,
+                    page: page
+                },
+                success: function(response) {
+                    $('#document-table-container').html(response.html);
+                },
+                error: function(xhr) {
+                    console.log('Error:', xhr);
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            $('#search-input').on('keyup', function() {
+                fetchDocuments();
+            });
+            $('#category-select').on('change', function() {
+                fetchDocuments();
+            });
+            $('#sort-select').on('change', function() {
+                fetchDocuments();
+            });
+            $('#reset-btn').on('click', function() {
+                $('#search-input').val('');
+                $('#category-select').val('');
+                $('#sort-select').val('newest');
+                fetchDocuments();
+            });
+
+            // Handle pagination clicks (dynamic)
+            $(document).on('click', '.pagination a', function(e) {
+                e.preventDefault();
+                let url = $(this).attr('href');
+                let page = new URL(url).searchParams.get('page');
+                if (page) fetchDocuments(page);
+            });
+        });
+    </script>
 @endsection

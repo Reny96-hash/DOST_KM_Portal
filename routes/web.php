@@ -54,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/documents/{id}', [DocumentController::class, 'update'])->name('documents.update');
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy'])->name('documents.destroy');
     Route::get('/my-uploads', [DocumentController::class, 'myUploads'])->name('documents.my-uploads');
+    Route::get('/documents/fetch', [DocumentController::class, 'fetchDocuments'])->name('documents.fetch');
 Route::get('/images/{id}', [DocumentController::class, 'getImage'])->name('images.show');
     // Admin approval routes
     Route::middleware('admin-or-kmchampion')->prefix('admin')->name('admin.')->group(function () {
