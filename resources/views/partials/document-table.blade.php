@@ -56,6 +56,17 @@
                             @endif
                             <a href="{{ route('download', $doc->doc_id) }}" class="btn btn-sm btn-outline-secondary"
                                 title="Download"><i class="fas fa-download"></i></a>
+                            @if (auth()->user()->isAdmin())
+                                <form method="POST" action="{{ route('documents.destroy', $doc->doc_id) }}"
+                                    style="display: inline-block; margin-left: 5px;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"
+                                        onclick="return confirm('Delete this document?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @endforeach

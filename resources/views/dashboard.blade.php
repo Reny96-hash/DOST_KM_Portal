@@ -1,244 +1,251 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container-fluid px-3">
+    <div class="row">
+        <div class="col-12">
 
-        <!-- Welcome Bar -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="fw-semibold">Welcome, {{ auth()->user()->user_first_name }}
-                                {{ auth()->user()->user_last_name }}</span>
-                            <span class="text-muted ms-2 small">Clearance: {{ auth()->user()->security_clearance }}</span>
+            <!-- Welcome, Search & Create (inline) -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body py-3 px-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <h5 class="mb-0">Welcome, {{ auth()->user()->user_first_name }} 👋</h5>
+                            <small class="text-muted">{{ auth()->user()->user_role }} | Clearance:
+                                {{ auth()->user()->security_clearance }}</small>
                         </div>
-                        @if (auth()->user()->isAdmin())
-                            <div>
-                                <a href="{{ route('upload.form') }}" class="btn btn-sm btn-primary me-1"><i
-                                        class="fas fa-upload"></i> Upload</a>
-                                <a href="{{ route('admin.users') }}" class="btn btn-sm btn-outline-secondary"><i
-                                        class="fas fa-users"></i> Users</a>
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <input type="text" id="global-search" class="form-control form-control-sm"
+                                    placeholder="Search documents..." autocomplete="off">
+                                <button class="btn btn-primary btn-sm" id="global-search-btn"><i
+                                        class="fas fa-search"></i></button>
                             </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Statistics Cards -->
-        <div class="row g-2 mb-3">
-            <div class="col-md-3 col-6">
-                <div class="card border-0 shadow-sm text-center py-2">
-                    <div class="card-body p-2">
-                        <i class="fas fa-file-alt text-secondary fa-lg"></i>
-                        <h4 class="mb-0 mt-1 fw-bold">{{ $approvedDocumentsCount ?? 0 }}</h4>
-                        <small class="text-muted">Approved Docs</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6">
-                <div class="card border-0 shadow-sm text-center py-2">
-                    <div class="card-body p-2">
-                        <i class="fas fa-clock text-secondary fa-lg"></i>
-                        <h4 class="mb-0 mt-1 fw-bold">{{ $pendingDocumentsCount ?? 0 }}</h4>
-                        <small class="text-muted">Pending</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6">
-                <div class="card border-0 shadow-sm text-center py-2">
-                    <div class="card-body p-2">
-                        <i class="fas fa-image text-secondary fa-lg"></i>
-                        <h4 class="mb-0 mt-1 fw-bold">{{ $imagesCount ?? 0 }}</h4>
-                        <small class="text-muted">Images</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6">
-                <div class="card border-0 shadow-sm text-center py-2">
-                    <div class="card-body p-2">
-                        <i class="fas fa-user-folder text-secondary fa-lg"></i>
-                        <h4 class="mb-0 mt-1 fw-bold">{{ $myDocumentsCount ?? 0 }}</h4>
-                        <small class="text-muted">My Documents</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Admin/KM Champion extra stats -->
-        @if (auth()->user()->isAdmin() || auth()->user()->isKmChampion())
-            <div class="row g-2 mb-3">
-                <div class="col-md-3 col-6">
-                    <div class="card border-0 shadow-sm text-center py-2">
-                        <div class="card-body p-2">
-                            <i class="fas fa-users text-secondary fa-lg"></i>
-                            <h4 class="mb-0 mt-1 fw-bold">{{ $totalUsers ?? 0 }}</h4>
-                            <small class="text-muted">Total Users</small>
+                            <div id="search-suggestions" class="list-group mt-1"
+                                style="position: absolute; z-index: 1000; width: calc(100% - 45px); display: none;"></div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="card border-0 shadow-sm text-center py-2">
-                        <div class="card-body p-2">
-                            <i class="fas fa-star text-secondary fa-lg"></i>
-                            <h4 class="mb-0 mt-1 fw-bold">{{ $kmChampionCount ?? 0 }}</h4>
-                            <small class="text-muted">KM Champions</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="card border-0 shadow-sm text-center py-2">
-                        <div class="card-body p-2">
-                            <i class="fas fa-shield-alt text-secondary fa-lg"></i>
-                            <h4 class="mb-0 mt-1 fw-bold">{{ $adminCount ?? 0 }}</h4>
-                            <small class="text-muted">Admins</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="card border-0 shadow-sm text-center py-2">
-                        <div class="card-body p-2">
-                            <i class="fas fa-user text-secondary fa-lg"></i>
-                            <h4 class="mb-0 mt-1 fw-bold">{{ $staffCount ?? 0 }}</h4>
-                            <small class="text-muted">Staff</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
-
-        <!-- Recently Added & Most Viewed -->
-        <div class="row mb-3 g-2">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-2 border-0"><small class="fw-semibold text-muted">RECENTLY
-                            ADDED</small></div>
-                    <div class="card-body p-2">
-                        @if (isset($recentDocuments) && $recentDocuments->count())
-                            @foreach ($recentDocuments as $doc)
-                                <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="fas fa-file-alt text-secondary fa-sm"></i>
-                                        <span class="small">{{ Str::limit($doc->doc_title, 35) }}</span>
-                                    </div>
-                                    <small class="text-muted">{{ $doc->created_at->diffForHumans() }}</small>
-                                </div>
-                            @endforeach
-                        @else
-                            <p class="text-muted small text-center py-2 mb-0">No approved documents yet</p>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-2 border-0"><small class="fw-semibold text-muted">MOST
-                            VIEWED</small></div>
-                    <div class="card-body p-2">
-                        @if (isset($mostViewedDocuments) && $mostViewedDocuments->count())
-                            @foreach ($mostViewedDocuments as $doc)
-                                <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="fas fa-chart-simple text-secondary fa-sm"></i>
-                                        <span class="small">{{ Str::limit($doc->doc_title, 35) }}</span>
-                                    </div>
-                                    <small class="text-muted">{{ $doc->view_count }} views</small>
-                                </div>
-                            @endforeach
-                        @else
-                            <p class="text-muted small text-center py-2 mb-0">No view data yet</p>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Document Repository with Dynamic Filters -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-2 border-0">
-                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <small class="fw-semibold text-muted">DOCUMENT REPOSITORY (Approved Only)</small>
-                            <div class="d-flex gap-2 align-items-center">
-                                <select id="sort-select" class="form-select form-select-sm" style="width:130px">
-                                    <option value="newest" {{ request('sort', 'newest') == 'newest' ? 'selected' : '' }}>
-                                        Newest First</option>
-                                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest First
-                                    </option>
-                                </select>
-                                <input type="text" id="search-input" class="form-control form-control-sm"
-                                    placeholder="Search..." style="width:180px" value="{{ request('search') }}">
-                                <select id="category-select" class="form-select form-select-sm" style="width:130px">
-                                    <option value="">All Categories</option>
-                                    @foreach ($categories as $cat)
-                                        <option value="{{ $cat }}"
-                                            {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
-                                    @endforeach
-                                </select>
-                                <button id="reset-btn" class="btn btn-sm btn-outline-secondary">Reset</button>
+                        <div class="col-md-3 text-end">
+                            <div class="dropdown">
+                                <button class="btn btn-primary btn-sm dropdown-toggle" type="button"
+                                    data-bs-toggle="dropdown">
+                                    <i class="fas fa-plus"></i> Create
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{{ route('content.create') }}?type=article"><i
+                                                class="fas fa-newspaper"></i> Article</a></li>
+                                    <li><a class="dropdown-item" href="{{ route('content.create') }}?type=file"><i
+                                                class="fas fa-upload"></i> File</a></li>
+                                    <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addLinkModal"><i
+                                                class="fas fa-link"></i> Link</a></li>
+                                </ul>
                             </div>
                         </div>
                     </div>
-                    <div class="card-body p-0" id="document-table-container">
-                        @include('partials.document-table', ['paginatedDocuments' => $paginatedDocuments])
+                </div>
+            </div>
+
+            <!-- Recently Added & Most Viewed Cards -->
+            <div class="row mb-4 g-3">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white">RECENTLY ADDED</div>
+                        <div class="card-body p-2">
+                            @forelse($recentDocuments ?? [] as $doc)
+                                <a href="{{ route('document.show', $doc->doc_id) }}" class="text-decoration-none text-dark">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                                        <div><i class="fas fa-file-alt text-secondary me-1"></i>
+                                            {{ Str::limit($doc->doc_title, 40) }}</div>
+                                        <small class="text-muted">{{ $doc->created_at->diffForHumans() }}</small>
+                                    </div>
+                                </a>
+                            @empty
+                                <p class="text-muted small text-center py-2 mb-0">No approved documents yet.</p>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white">MOST VIEWED</div>
+                        <div class="card-body p-2">
+                            @forelse($mostViewedDocuments ?? [] as $doc)
+                                <a href="{{ route('document.show', $doc->doc_id) }}" class="text-decoration-none text-dark">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                                        <div>
+                                            <i class="fas fa-chart-simple text-secondary me-1"></i>
+                                            {{ Str::limit($doc->doc_title, 40) }}
+                                        </div>
+                                        <small class="text-muted">{{ $doc->view_count }} views</small>
+                                    </div>
+                                </a>
+                            @empty
+                                <p class="text-muted small text-center py-2 mb-0">No view data yet.</p>
+                            @endforelse
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Charts (only for Admin and KM Champion) -->
+            @if (auth()->user()->isAdmin() || auth()->user()->isKmChampion())
+                <div class="row mb-4 g-3">
+                    <div class="col-md-6">
+                        <div class="card shadow-sm">
+                            <div class="card-header">Documents by Category</div>
+                            <div class="card-body">
+                                <canvas id="categoryChart" style="height: 180px;"></canvas>
+                                <div id="categoryNoData" class="text-muted text-center mt-2" style="display: none;">No data
+                                    yet. Add approved documents with categories.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card shadow-sm">
+                            <div class="card-header">Documents by Security Clearance</div>
+                            <div class="card-body">
+                                <canvas id="clearanceChart" style="height: 180px;"></canvas>
+                                <div id="clearanceNoData" class="text-muted text-center mt-2" style="display: none;">No data
+                                    yet.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Staff: their own documents (paginated table) -->
+            @if (!auth()->user()->isAdmin() && !auth()->user()->isKmChampion())
+                <div class="card shadow-sm">
+                    <div class="card-header">My Uploads</div>
+                    <div class="card-body p-0">
+                        @if ($myDocs->count())
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Category</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($myDocs as $doc)
+                                            <tr>
+                                                <td>{{ $doc->doc_title }}</td>
+                                                <td>{{ $doc->doc_category }}</td>
+                                                <td>{{ ucfirst($doc->content_type) }}</td>
+                                                <td><span class="badge bg-secondary">{{ $doc->doc_status }}</span></td>
+                                                <td><a href="{{ route('document.show', $doc->doc_id) }}"
+                                                        class="btn btn-sm btn-primary">View</a></td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="p-2 border-top">
+                                {{ $myDocs->links() }}
+                            </div>
+                        @else
+                            <p class="text-muted text-center py-3">You haven't uploaded any documents yet.</p>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
         </div>
     </div>
 
-    <!-- jQuery and AJAX script -->
+    <!-- Modal for adding a link -->
+    @include('modals.add-link')
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        function fetchDocuments(page = 1) {
-            let search = $('#search-input').val();
-            let category = $('#category-select').val();
-            let sort = $('#sort-select').val();
-
-            $.ajax({
-                url: "{{ route('documents.fetch') }}",
-                type: "GET",
-                data: {
-                    search: search,
-                    category: category,
-                    sort: sort,
-                    page: page
-                },
-                success: function(response) {
-                    $('#document-table-container').html(response.html);
-                },
-                error: function(xhr) {
-                    console.log('Error:', xhr);
-                }
-            });
-        }
-
-        $(document).ready(function() {
-            $('#search-input').on('keyup', function() {
-                fetchDocuments();
-            });
-            $('#category-select').on('change', function() {
-                fetchDocuments();
-            });
-            $('#sort-select').on('change', function() {
-                fetchDocuments();
-            });
-            $('#reset-btn').on('click', function() {
-                $('#search-input').val('');
-                $('#category-select').val('');
-                $('#sort-select').val('newest');
-                fetchDocuments();
-            });
-
-            // Handle pagination clicks (dynamic)
-            $(document).on('click', '.pagination a', function(e) {
-                e.preventDefault();
-                let url = $(this).attr('href');
-                let page = new URL(url).searchParams.get('page');
-                if (page) fetchDocuments(page);
-            });
+        // Autocomplete search
+        let searchInput = $('#global-search');
+        let suggestions = $('#search-suggestions');
+        let timeout = null;
+        searchInput.on('keyup', function() {
+            let query = $(this).val();
+            if (query.length < 2) {
+                suggestions.hide();
+                return;
+            }
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+                $.ajax({
+                    url: "{{ route('search.autocomplete') }}",
+                    data: {
+                        q: query
+                    },
+                    success: function(data) {
+                        suggestions.empty();
+                        if (data.length) {
+                            $.each(data, function(i, item) {
+                                suggestions.append(
+                                    `<a href="/document/${item.doc_id}" class="list-group-item list-group-item-action">${item.doc_title}</a>`
+                                );
+                            });
+                            suggestions.show();
+                        } else {
+                            suggestions.hide();
+                        }
+                    }
+                });
+            }, 300);
+        });
+        $(document).click(function(e) {
+            if (!$(e.target).closest('#global-search, #search-suggestions').length) suggestions.hide();
         });
     </script>
+
+    @if (auth()->user()->isAdmin() || auth()->user()->isKmChampion())
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            const catLabels = @json($categoryStats->keys());
+            const catData = @json($categoryStats->values());
+            const clearanceLabels = @json($clearanceStats->keys());
+            const clearanceData = @json($clearanceStats->values());
+
+            if (catLabels.length && catData.length) {
+                new Chart(document.getElementById('categoryChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: catLabels,
+                        datasets: [{
+                            label: 'Documents',
+                            data: catData,
+                            backgroundColor: '#1d799d'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true
+                    }
+                });
+            } else {
+                document.getElementById('categoryChart').style.display = 'none';
+                document.getElementById('categoryNoData').style.display = 'block';
+            }
+
+            if (clearanceLabels.length && clearanceData.length) {
+                new Chart(document.getElementById('clearanceChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: clearanceLabels,
+                        datasets: [{
+                            data: clearanceData,
+                            backgroundColor: ['#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6c757d']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true
+                    }
+                });
+            } else {
+                document.getElementById('clearanceChart').style.display = 'none';
+                document.getElementById('clearanceNoData').style.display = 'block';
+            }
+        </script>
+    @endif
 @endsection

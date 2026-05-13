@@ -1,31 +1,68 @@
 <?php
+
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Document extends Model
 {
+    use HasFactory;
+
     protected $table = 'tbl_documents';
     protected $primaryKey = 'doc_id';
     public $timestamps = true;
 
     protected $fillable = [
-        'user_id', 'doc_title', 'doc_description', 'doc_category', 'doc_author', 'doc_department',
-        'doc_file_path', 'doc_file_name', 'doc_file_type', 'doc_file_size', 'doc_version',
-        'security_clearance', 'doc_status', 'approval_status', 'reviewed_by', 'reviewed_at',
-        'rejection_reason', 'is_question', 'parent_doc_id', 'content_rich', 'allow_comments',
-        'likes_count', 'content_type'
+        'user_id',
+        'doc_title',
+        'doc_description',
+        'doc_category',
+        'doc_author',
+        'doc_department',
+        'doc_file_path',
+        'doc_file_name',
+        'doc_file_type',
+        'doc_file_size',
+        'doc_version',
+        'security_clearance',
+        'doc_status',
+        'approval_status',      // NEW
+    'reviewed_by',          // NEW
+    'reviewed_at',          // NEW
+    'rejection_reason',     // NEW
+        'approved_by',
+        'approved_at',
+        'is_tacit_knowledge',
+        'expert_name',
+        'expert_retirement_date',
+        'expert_methodology',
+        'view_count',
+        'download_count'
     ];
 
     protected $casts = [
-        'is_question' => 'boolean',
-        'allow_comments' => 'boolean',
-        'reviewed_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'expert_retirement_date' => 'date',
+        'is_tacit_knowledge' => 'boolean'
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by', 'user_id');
+    }
+
+    public function accessLogs()
+    {
+        return $this->hasMany(AccessLog::class, 'doc_id', 'doc_id');
+    }
+
     // Relationships
-    public function user() { return $this->belongsTo(User::class, 'user_id'); }
-    public function reviewer() { return $this->belongsTo(User::class, 'reviewed_by'); }
     public function attachments() { return $this->hasMany(DocumentAttachment::class, 'doc_id'); }
     public function comments() { return $this->hasMany(Comment::class, 'doc_id')->whereNull('parent_comment_id'); }
     public function allComments() { return $this->hasMany(Comment::class, 'doc_id'); }
@@ -34,6 +71,7 @@ class Document extends Model
     public function approvalComments() { return $this->hasMany(ApprovalComment::class, 'doc_id'); }
     public function parent() { return $this->belongsTo(Document::class, 'parent_doc_id'); }
     public function children() { return $this->hasMany(Document::class, 'parent_doc_id'); }
+    public function folder() { return $this->belongsTo(Folder::class, 'folder_id'); }
 
     // Helper methods
     public function toggleBookmark($userId)
@@ -48,10 +86,6 @@ class Document extends Model
 
     public function isFile() { return $this->content_type === 'file'; }
     public function isArticle() { return $this->content_type === 'article'; }
+}
 
-    public function createContent()
-{
-    $categories = Category::pluck('cat_name')->toArray();
-    return view('content.create', compact('categories'));
-}
-}
+
