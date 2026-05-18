@@ -24,7 +24,9 @@
                         <div class="col-md-6">
                             <label>Category</label>
                             <select name="category" class="form-select" required>
-                                @foreach ($categories ?? [] as $cat)
+                                <option value="">-- Select Category --</option>
+                                @php $cats = \App\Models\Category::pluck('cat_name'); @endphp
+                                @foreach ($cats as $cat)
                                     <option value="{{ $cat }}">{{ $cat }}</option>
                                 @endforeach
                             </select>
@@ -51,6 +53,7 @@
 </div>
 
 <script>
+    // Pre-fill category if the button that opened modal has data-category attribute
     document.querySelectorAll('[data-bs-target="#addLinkModal"]').forEach(btn => {
         btn.addEventListener('click', function() {
             const cat = this.dataset.category;

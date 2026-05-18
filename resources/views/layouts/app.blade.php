@@ -364,6 +364,8 @@
         });
     </script>
     @stack('scripts')
+    @include('modals.add-link')
+
 </body>
 
 </html>

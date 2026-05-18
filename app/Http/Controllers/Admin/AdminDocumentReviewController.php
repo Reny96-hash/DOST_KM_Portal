@@ -63,18 +63,27 @@ class AdminDocumentReviewController extends Controller
     }
 
     // Reject document with required final comment
-    public function reject(Request $request, $id)
-    {
-        $request->validate(['admin_comment' => 'required|string|max:1000']);
-        ApprovalComment::create([
-            'doc_id' => $id,
-            'admin_id' => auth()->user()->user_id,
-            'comment' => $request->admin_comment
-        ]);
-        $document = Document::findOrFail($id);
-        $document->approval_status = 'rejected';
-        $document->doc_status = 'draft';
-        $document->save();
-        return redirect()->route('admin.documents.pending')->with('warning', 'Document rejected.');
-    }
+// app/Http/Controllers/Admin/AdminDocumentReviewController.php
+public function reject(Request $request, $id)
+{
+    $request->validate([
+        'admin_comment' => 'required|string|max:1000'
+    ]);
+
+    $document = Document::findOrFail($id);
+
+    // Save the rejection comment
+    \App\Models\ApprovalComment::create([
+        'doc_id' => $id,
+        'admin_id' => auth()->id(),
+        'comment' => $request->admin_comment
+    ]);
+
+    // Update document status
+    $document->approval_status = 'rejected';
+    $document->doc_status = 'draft';
+    $document->save();
+
+    return redirect()->route('admin.documents.pending')->with('warning', 'Document rejected.');
+}
 }
