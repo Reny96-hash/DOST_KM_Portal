@@ -206,18 +206,26 @@ class DocumentController extends Controller
 
     return redirect()->back()->with('success', 'Document deleted.');
 }
- public function myUploads(Request $request)
+public function myUploads(Request $request)
 {
     $type = $request->get('type', 'all');
+    $sort = $request->get('sort', 'date');
+    $direction = $request->get('direction', 'desc');
+
     $query = Document::where('user_id', auth()->user()->user_id);
 
-    if ($type === 'question') {
-        $query->where('is_question', true);
-    } elseif ($type !== 'all') {
-        $query->where('content_type', $type)->where('is_question', false);
+    if ($type !== 'all') {
+        $query->where('content_type', $type);
     }
 
-    $documents = $query->orderBy('created_at', 'desc')->paginate(10);
+    switch ($sort) {
+        case 'title': $query->orderBy('doc_title', $direction); break;
+        case 'category': $query->orderBy('doc_category', $direction); break;
+        case 'status': $query->orderBy('doc_status', $direction); break;
+        case 'date': default: $query->orderBy('created_at', $direction); break;
+    }
+
+    $documents = $query->paginate(10);
     return view('documents.my-uploads', compact('documents'));
 }
 
@@ -288,7 +296,7 @@ public function categoryShow(Request $request, $name)
 {
     $user = auth()->user();
     $type = $request->get('type', 'all');
-
+$search = $request->get('search');
     $query = Document::where('doc_category', $name)
         ->where('approval_status', 'approved')
         ->where('doc_status', 'published');
@@ -303,13 +311,44 @@ public function categoryShow(Request $request, $name)
         $query->where('is_question', true);
     }
     // 'all' shows everything (including questions, articles, files, links)
+ if ($type !== 'all') {
+        $query->where('content_type', $type);
+    }
+
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('doc_title', 'like', "%{$search}%")
+              ->orWhere('doc_description', 'like', "%{$search}%");
+        });
+    }
+
+    // sorting
+    $sort = $request->get('sort', 'newest');
+    if ($sort === 'oldest') {
+        $query->orderBy('created_at', 'asc');
+    } else {
+        $query->orderBy('created_at', 'desc');
+    }
 
     $documents = $query->orderBy('created_at', 'desc')->paginate(12);
     $documents->getCollection()->filter(fn($doc) => $user->canViewDocument($doc->security_clearance));
 
-    return view('categories.show', compact('documents', 'name', 'type'));
+    return view('categories.show', compact('documents', 'name', 'type', 'sort', 'search'));
 }
+public function autocompleteCategory(Request $request, $name)
+{
+    $query = $request->get('q');
+    if (strlen($query) < 2) return response()->json([]);
 
+    $documents = Document::where('doc_category', $name)
+        ->where('approval_status', 'approved')
+        ->where('doc_status', 'published')
+        ->where('doc_title', 'like', "%{$query}%")
+        ->limit(10)
+        ->get(['doc_id', 'doc_title']);
+
+    return response()->json($documents);
+}
 public function storeContent(Request $request)
 {
     $isDraft = $request->has('save_draft');

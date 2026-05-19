@@ -41,6 +41,7 @@ Route::get('/category/{name}', [DocumentController::class, 'categoryShow'])->nam
 Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
 Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
 
+Route::get('/search/autocomplete/category/{name}', [DocumentController::class, 'autocompleteCategory'])->name('search.autocomplete.category');
     // Document actions
     Route::get('/documents/edit/{id}', [DocumentController::class, 'edit'])->name('documents.edit');
     Route::put('/documents/{id}', [DocumentController::class, 'update'])->name('documents.update');
@@ -73,22 +74,32 @@ Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update']
     Route::post('/ask', [QuestionController::class, 'store'])->name('question.store');
 
 Route::get('/category/{name}', [DocumentController::class, 'categoryShow'])->name('category.show');
-
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/technical', [App\Http\Controllers\Admin\TechnicalController::class, 'index'])->name('technical');
+});
 
     // ========== ADMIN‑ONLY ROUTES ==========
-    Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
-        // User management
-        Route::get('/users', [UserManagementController::class, 'index'])->name('users');
-        Route::get('/users/{id}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
-        Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('users.update');
-        Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+// ========== ADMIN‑ONLY ROUTES ==========
+Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+    // User management
+    Route::get('/users', [UserManagementController::class, 'index'])->name('users');
+    Route::get('/users/{id}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('users.update');
+    Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
 
-        // Category management
-        Route::resource('categories', CategoryManagementController::class);
+    // Bulk delete for documents
+    Route::delete('/documents/bulk-delete', [AdminDocumentReviewController::class, 'bulkDelete'])->name('documents.bulk-delete');
 
-        // Analytics dashboard
-        Route::get('/analytics', [AdminAnalyticsController::class, 'index'])->name('analytics');
-    });
+    // Category management
+    Route::resource('categories', CategoryManagementController::class);
+
+    // Analytics dashboard
+    Route::get('/analytics', [AdminAnalyticsController::class, 'index'])->name('analytics');
+
+    // Technical Dashboard
+    Route::get('/technical', [App\Http\Controllers\Admin\TechnicalController::class, 'index'])->name('technical');
+    Route::post('/technical/backup', [App\Http\Controllers\Admin\TechnicalController::class, 'backupDatabase'])->name('technical.backup');
+});
 
     // ========== ADMIN & KM CHAMPION ROUTES (Approvals) ==========
     Route::middleware('admin-or-kmchampion')->prefix('admin')->name('admin.')->group(function () {

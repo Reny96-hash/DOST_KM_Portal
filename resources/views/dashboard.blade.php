@@ -9,7 +9,7 @@
                 <div class="card-body py-3 px-4">
                     <div class="row align-items-center">
                         <div class="col-md-4">
-                            <h5 class="mb-0">Welcome, {{ auth()->user()->user_first_name }} 👋</h5>
+                            <h5 class="mb-0">Welcome, {{ auth()->user()->user_first_name }}</h5>
                             <small class="text-muted">{{ auth()->user()->user_role }} | Clearance:
                                 {{ auth()->user()->security_clearance }}</small>
                         </div>
@@ -135,8 +135,44 @@
                                                 <td>{{ $doc->doc_category }}</td>
                                                 <td>{{ ucfirst($doc->content_type) }}</td>
                                                 <td><span class="badge bg-secondary">{{ $doc->doc_status }}</span></td>
-                                                <td><a href="{{ route('document.show', $doc->doc_id) }}"
-                                                        class="btn btn-sm btn-primary">View</a></td>
+                                                <td class="text-nowrap text-center">
+                                                    @if ($doc->doc_status == 'draft')
+                                                        {{-- Draft: only Edit and Delete for owner --}}
+                                                        @if (auth()->user()->isAdmin() || $doc->user_id == auth()->id())
+                                                            <a href="{{ route('documents.edit', $doc->doc_id) }}"
+                                                                class="btn btn-sm btn-outline-primary" title="Edit"> <i
+                                                                    class="fas fa-edit"></i></a>
+                                                            <form method="POST"
+                                                                action="{{ route('documents.destroy', $doc->doc_id) }}"
+                                                                style="display:inline-block">
+                                                                @csrf @method('DELETE')
+                                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                                    title="Delete" onclick="return confirm('Delete?')"><i
+                                                                        class="fas fa-trash"></i></button>
+                                                            </form>
+                                                        @endif
+                                                    @else
+                                                        {{-- Published/pending: View always --}}
+                                                        <a href="{{ route('document.show', $doc->doc_id) }}"
+                                                            class="btn btn-sm btn-outline-info" title="View">
+                                                            <i class="fas fa-eye"></i></a>
+                                                        {{-- Edit/Delete for admin or owner of non‑approved documents --}}
+                                                        @if (auth()->user()->isAdmin() || ($doc->user_id == auth()->id() && $doc->approval_status != 'approved'))
+                                                            <a href="{{ route('documents.edit', $doc->doc_id) }}"
+                                                                class="btn btn-sm btn-outline-primary" title="Edit"> <i
+                                                                    class="fas fa-edit"></i></a>
+                                                            <form method="POST"
+                                                                action="{{ route('documents.destroy', $doc->doc_id) }}"
+                                                                style="display:inline-block">
+                                                                @csrf @method('DELETE')
+                                                                <button type="submit"
+                                                                    class="btn btn-sm btn-outline-danger" title="Delete"
+                                                                    onclick="return confirm('Delete?')"><i
+                                                                        class="fas fa-trash"></i></button>
+                                                            </form>
+                                                        @endif
+                                                    @endif
+                                                </td>
                                             </tr>
                                         @endforeach
                                     </tbody>

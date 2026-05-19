@@ -1,10 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
+    @include('partials.breadcrumbs', ['breadcrumbs' => [['label' => 'Manage Users']]])
+
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-2">
             <h6 class="mb-0"><i class="fas fa-users"></i> Manage Users</h6>
-            <small class="text-muted">Users registered via self-registration. Edit to promote to KM Champion.</small>
+            <small class="text-muted">Users registered via self-registration. Edit to promote roles.</small>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -39,7 +41,7 @@
                                         <span class="badge bg-secondary">Staff</span>
                                     @endif
                                 </td>
-                                <td><span class="badge">{{ $user->security_clearance }}</span></td>
+                                <td>{{ $user->security_clearance ?? '-' }}</td>
                                 <td>
                                     @if ($user->user_status == 'active')
                                         <span class="badge bg-success">Active</span>
@@ -49,7 +51,7 @@
                                 </td>
                                 <td class="text-end pe-3">
                                     <a href="{{ route('admin.users.edit', $user->user_id) }}"
-                                        class="btn btn-sm btn-outline-secondary" title="Edit">
+                                        class="btn btn-sm btn-outline-primary" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     @if ($user->user_id != auth()->user()->user_id)
@@ -57,7 +59,7 @@
                                             style="display: inline-block;">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Delete"
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"
                                                 onclick="return confirm('Delete this user?')">
                                                 <i class="fas fa-trash"></i>
                                             </button>

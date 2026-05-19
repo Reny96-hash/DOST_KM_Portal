@@ -12,4 +12,8 @@ class ApprovalComment extends Model
     {
         return $this->belongsTo(User::class, 'admin_id');
     }
+    public function document()
+{
+    return $this->belongsTo(Document::class, 'doc_id');
+}
 }

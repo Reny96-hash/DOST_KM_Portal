@@ -1,6 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
+    @include('partials.breadcrumbs', [
+        'breadcrumbs' => [['label' => 'Manage Users', 'url' => route('admin.users')], ['label' => 'Edit User']],
+    ])
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card border-0 shadow-sm">

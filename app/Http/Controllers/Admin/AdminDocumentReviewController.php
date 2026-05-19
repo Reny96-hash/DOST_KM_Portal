@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Document;
 use App\Models\ApprovalComment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AdminDocumentReviewController extends Controller
 {
@@ -16,11 +17,34 @@ class AdminDocumentReviewController extends Controller
     }
 
     // List pending documents
-    public function pending()
+public function pending(Request $request)
 {
-    $pendingDocuments = Document::where('doc_status', 'pending')
-        ->orderBy('created_at', 'asc')
-        ->paginate(10);
+    $query = Document::where('doc_status', 'pending')
+                     ->where('approval_status', 'pending')
+                     ->with('user');
+
+    // Search (title or uploader name/email)
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('doc_title', 'like', "%{$search}%")
+              ->orWhereHas('user', function($u) use ($search) {
+                  $u->where('user_first_name', 'like', "%{$search}%")
+                    ->orWhere('user_last_name', 'like', "%{$search}%")
+                    ->orWhere('user_email', 'like', "%{$search}%");
+              });
+        });
+    }
+
+    // Sorting
+    $sort = $request->get('sort', 'created_at');
+    $direction = $request->get('dir', 'desc');
+    $allowed = ['created_at', 'doc_title', 'doc_category'];
+    if (in_array($sort, $allowed)) {
+        $query->orderBy($sort, $direction);
+    }
+
+    $pendingDocuments = $query->paginate(10);
     return view('admin.pending-documents', compact('pendingDocuments'));
 }
 
@@ -85,5 +109,27 @@ public function reject(Request $request, $id)
     $document->save();
 
     return redirect()->route('admin.documents.pending')->with('warning', 'Document rejected.');
+}
+public function bulkDelete(Request $request)
+{
+    $ids = $request->input('ids');
+    if (empty($ids)) {
+        return back()->with('error', 'No documents selected.');
+    }
+    $ids = explode(',', $ids);
+    $documents = Document::whereIn('doc_id', $ids)->get();
+    foreach ($documents as $doc) {
+        if ($doc->doc_file_path && Storage::disk('local')->exists($doc->doc_file_path)) {
+            Storage::disk('local')->delete($doc->doc_file_path);
+        }
+        foreach ($doc->attachments as $att) {
+            if (Storage::disk('local')->exists($att->file_path)) {
+                Storage::disk('local')->delete($att->file_path);
+            }
+            $att->delete();
+        }
+        $doc->delete();
+    }
+    return back()->with('success', count($ids) . ' document(s) deleted.');
 }
 }

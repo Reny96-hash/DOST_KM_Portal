@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+    @include('partials.breadcrumbs', ['breadcrumbs' => [['label' => 'Create Content']]])
+
     <div class="container">
         <div class="card">
             <div class="card-header">{{ request()->get('type') == 'article' ? 'Create Article' : 'Upload File' }}</div>
@@ -25,8 +27,9 @@
                     </div>
 
                     <div class="mb-3">
-                        <label>Description <span class="text-danger">*</span></label>
-                        <textarea name="description" rows="2" class="form-control" required>{{ old('description') }}</textarea>
+                        <label>Description</label>
+                        <textarea name="description" rows="2" class="form-control">{{ old('description') }}</textarea>
+                        <small class="text-muted">Required only when publishing (not for draft).</small>
                     </div>
 
                     @if (request()->get('type') == 'article')

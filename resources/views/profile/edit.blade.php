@@ -1,5 +1,8 @@
 @extends('layouts.app')
+
 @section('content')
+    @include('partials.breadcrumbs', ['breadcrumbs' => [['label' => 'My Profile']]])
+
     <div class="container">
         <div class="card">
             <div class="card-header">My Profile</div>

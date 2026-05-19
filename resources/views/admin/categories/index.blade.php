@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+    @include('partials.breadcrumbs', ['breadcrumbs' => [['label' => 'Manage Categories']]])
+
     <div class="container">
         <h3>Manage Categories</h3>
 
@@ -45,12 +47,13 @@
                                 <td>{{ $cat->cat_name }}</td>
                                 <td>{{ $cat->cat_description ?? '-' }}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-secondary" data-bs-toggle="modal"
-                                        data-bs-target="#editModal{{ $cat->cat_id }}">Edit</button>
+                                    <button class="btn btn-sm btn-outline-primary" title="Edit" data-bs-toggle="modal"
+                                        data-bs-target="#editModal{{ $cat->cat_id }}"><i class="fas fa-edit"></i></button>
                                     <form method="POST" action="{{ route('admin.categories.destroy', $cat->cat_id) }}"
                                         style="display:inline-block" onsubmit="return confirm('Delete this category?');">
                                         @csrf @method('DELETE')
-                                        <button class="btn btn-sm btn-danger">Delete</button>
+                                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i
+                                                class="fas fa-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>

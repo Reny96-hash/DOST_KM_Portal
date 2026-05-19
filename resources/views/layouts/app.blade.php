@@ -229,6 +229,15 @@
         .sidebar.collapsed .toggle-btn {
             margin-left: auto;
         }
+
+        .pending-badge {
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+        }
     </style>
 </head>
 
@@ -246,40 +255,48 @@
             <button class="toggle-btn" id="toggleSidebar"><i class="fas fa-bars"></i></button>
         </div>
         <div class="sidebar-nav">
-            <a href="{{ route('dashboard') }}"
-                class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                <i class="fas fa-home"></i> <span>Dashboard</span>
-            </a>
-            <div class="sidebar-heading"><span>Categories</span></div>
-            @php $cats = \App\Models\Category::orderBy('cat_name')->pluck('cat_name'); @endphp
-            @foreach ($cats as $cat)
-                <a href="{{ route('category.show', $cat) }}"
-                    class="sidebar-link {{ request()->route('name') == $cat ? 'active' : '' }}">
-                    <i class="fas fa-folder"></i> <span>{{ $cat }}</span>
+            @auth
+                <a href="{{ route('dashboard') }}"
+                    class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                    <i class="fas fa-home"></i> <span>Dashboard</span>
                 </a>
-            @endforeach
+                <div class="sidebar-heading"><span>Categories</span></div>
+                @php $cats = \App\Models\Category::orderBy('cat_name')->pluck('cat_name'); @endphp
+                @foreach ($cats as $cat)
+                    <a href="{{ route('category.show', $cat) }}"
+                        class="sidebar-link {{ request()->route('name') == $cat ? 'active' : '' }}">
+                        <i class="fas fa-folder"></i> <span>{{ $cat }}</span>
+                    </a>
+                @endforeach
 
-            <div class="sidebar-heading"><span>Actions</span></div>
-            <a href="{{ route('question.create') }}" class="sidebar-link">
-                <i class="fas fa-question-circle"></i> <span>Ask a Question</span>
-            </a>
-            @if (auth()->user()->isAdmin() || auth()->user()->isKmChampion())
-                <a href="{{ route('admin.documents.pending') }}" class="sidebar-link">
-                    <i class="fas fa-clock"></i> <span>Pending Approvals</span>
+                <div class="sidebar-heading"><span>Actions</span></div>
+                <a href="{{ route('question.create') }}" class="sidebar-link">
+                    <i class="fas fa-question-circle"></i> <span>Ask a Question</span>
                 </a>
-            @endif
-            @if (auth()->user()->isAdmin())
-                <a href="{{ route('admin.users') }}" class="sidebar-link">
-                    <i class="fas fa-users"></i> <span>Users</span>
+                @if (auth()->user()->isAdmin() || auth()->user()->isKmChampion())
+                    <a href="{{ route('admin.documents.pending') }}" class="sidebar-link">
+                        <i class="fas fa-clock"></i> <span>Pending Approvals</span>
+                        @php $pendingCount = \App\Models\Document::where('doc_status', 'pending')->count(); @endphp
+                        @if ($pendingCount > 0)
+                            <span class="pending-badge">{{ $pendingCount }}</span>
+                        @endif
+                    </a>
+                @endif
+                @if (auth()->user()->isAdmin())
+                    <a href="{{ route('admin.users') }}" class="sidebar-link">
+                        <i class="fas fa-users"></i> <span>Users</span>
+                    </a>
+                    <a href="{{ route('admin.categories.index') }}" class="sidebar-link">
+                        <i class="fas fa-tags"></i> <span>Categories Mgt</span>
+                    </a>
+                    <a href="{{ route('admin.technical') }}" class="sidebar-link">
+                        <i class="fas fa-microchip"></i> <span>Technical</span>
+                    </a>
+                @endif
+                <a href="{{ route('documents.my-uploads') }}" class="sidebar-link">
+                    <i class="fas fa-upload"></i> <span>My Uploads</span>
                 </a>
-                <a href="{{ route('admin.categories.index') }}" class="sidebar-link">
-                    <i class="fas fa-tags"></i> <span>Categories Mgt</span>
-                </a>
-            @endif
-            <a href="{{ route('documents.my-uploads') }}" class="sidebar-link">
-                <i class="fas fa-upload"></i> <span>My Uploads</span>
-            </a>
-
+            @endauth
         </div>
     </div>
 
@@ -288,28 +305,31 @@
         <nav class="navbar navbar-light bg-white border-bottom px-3 py-2">
             <button class="btn btn-sm btn-outline-secondary d-md-none" id="mobileMenuBtn"><i
                     class="fas fa-bars"></i></button>
-            <div class="ms-auto">
-                <div class="dropdown">
-                    <button class="btn btn-link text-dark text-decoration-none dropdown-toggle" type="button"
-                        data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-user-circle fa-lg"></i> {{ auth()->user()->user_first_name }}
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i
-                                    class="fas fa-user-edit"></i> My Profile</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="dropdown-item text-danger"><i
-                                        class="fas fa-sign-out-alt"></i> Logout</button>
-                            </form>
-                        </li>
-                    </ul>
+            @auth
+
+                <div class="ms-auto">
+                    <div class="dropdown">
+                        <button class="btn btn-link text-dark text-decoration-none dropdown-toggle" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle fa-lg"></i> {{ auth()->user()->user_first_name }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i
+                                        class="fas fa-user-edit"></i> My Profile</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item text-danger"><i
+                                            class="fas fa-sign-out-alt"></i> Logout</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
-            </div>
+            @endauth
         </nav>
         <div class="container-fluid py-3 px-4">
             @if (session('success'))

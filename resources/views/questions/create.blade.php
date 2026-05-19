@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+    @include('partials.breadcrumbs', ['breadcrumbs' => [['label' => 'Ask a Question']]])
+
     <div class="container">
         <div class="card">
             <div class="card-header">Ask a Question</div>

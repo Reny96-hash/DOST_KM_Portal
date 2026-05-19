@@ -1,6 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
+    @include('partials.breadcrumbs', [
+        'breadcrumbs' => [
+            ['label' => 'My Uploads', 'url' => route('documents.my-uploads')],
+            ['label' => 'Edit Document'],
+        ],
+    ])
     <div class="container">
         <div class="card">
             <div class="card-header">Edit {{ ucfirst($document->content_type) }}</div>
@@ -33,12 +39,9 @@
                     @if ($document->content_type == 'article')
                         <div class="mb-3">
                             <label>Content</label>
-                            <div id="editor-container" style="height: 300px;">{!! $document->content_rich !!}</div>
+                            <div id="editor-container" style="height: 300px;"></div>
                             <textarea name="content_rich" id="content_rich_input" style="display:none;">{{ $document->content_rich }}</textarea>
-                            <small class="text-muted">Required only when publishing (not for draft).</small>
                         </div>
-
-                        <!-- Quill CSS & JS -->
                         <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
                         <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
                         <script>
@@ -66,16 +69,14 @@
                                     },
                                     placeholder: 'Write your article here...'
                                 });
-
-                                // Set initial content
-                                quill.root.innerHTML = document.querySelector('#editor-container').innerHTML;
-
-                                // Sync to hidden textarea on change
+                                // Set content from textarea
+                                var initialContent = document.getElementById('content_rich_input').value;
+                                quill.root.innerHTML = initialContent;
+                                // Sync changes
                                 quill.on('text-change', function() {
                                     document.getElementById('content_rich_input').value = quill.root.innerHTML;
                                 });
-
-                                // Final sync on form submit
+                                // Sync before submit
                                 document.querySelector('form').addEventListener('submit', function() {
                                     document.getElementById('content_rich_input').value = quill.root.innerHTML;
                                 });
