@@ -112,77 +112,87 @@
             @endif
 
             <!-- Staff: their own documents (paginated table) -->
+            <!-- Staff Dashboard -->
             @if (!auth()->user()->isAdmin() && !auth()->user()->isKmChampion())
-                <div class="card shadow-sm">
-                    <div class="card-header">My Uploads</div>
-                    <div class="card-body p-0">
-                        @if ($myDocs->count())
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Title</th>
-                                            <th>Category</th>
-                                            <th>Type</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($myDocs as $doc)
-                                            <tr>
-                                                <td>{{ $doc->doc_title }}</td>
-                                                <td>{{ $doc->doc_category }}</td>
-                                                <td>{{ ucfirst($doc->content_type) }}</td>
-                                                <td><span class="badge bg-secondary">{{ $doc->doc_status }}</span></td>
-                                                <td class="text-nowrap text-center">
-                                                    @if ($doc->doc_status == 'draft')
-                                                        {{-- Draft: only Edit and Delete for owner --}}
-                                                        @if (auth()->user()->isAdmin() || $doc->user_id == auth()->id())
-                                                            <a href="{{ route('documents.edit', $doc->doc_id) }}"
-                                                                class="btn btn-sm btn-outline-primary" title="Edit"> <i
-                                                                    class="fas fa-edit"></i></a>
-                                                            <form method="POST"
-                                                                action="{{ route('documents.destroy', $doc->doc_id) }}"
-                                                                style="display:inline-block">
-                                                                @csrf @method('DELETE')
-                                                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                                    title="Delete" onclick="return confirm('Delete?')"><i
-                                                                        class="fas fa-trash"></i></button>
-                                                            </form>
-                                                        @endif
-                                                    @else
-                                                        {{-- Published/pending: View always --}}
-                                                        <a href="{{ route('document.show', $doc->doc_id) }}"
-                                                            class="btn btn-sm btn-outline-info" title="View">
-                                                            <i class="fas fa-eye"></i></a>
-                                                        {{-- Edit/Delete for admin or owner of non‑approved documents --}}
-                                                        @if (auth()->user()->isAdmin() || ($doc->user_id == auth()->id() && $doc->approval_status != 'approved'))
-                                                            <a href="{{ route('documents.edit', $doc->doc_id) }}"
-                                                                class="btn btn-sm btn-outline-primary" title="Edit"> <i
-                                                                    class="fas fa-edit"></i></a>
-                                                            <form method="POST"
-                                                                action="{{ route('documents.destroy', $doc->doc_id) }}"
-                                                                style="display:inline-block">
-                                                                @csrf @method('DELETE')
-                                                                <button type="submit"
-                                                                    class="btn btn-sm btn-outline-danger" title="Delete"
-                                                                    onclick="return confirm('Delete?')"><i
-                                                                        class="fas fa-trash"></i></button>
-                                                            </form>
-                                                        @endif
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
+                <!-- Personal Document Summary -->
+                <div class="row mb-4 g-3">
+                    <div class="col-md-3 col-6">
+                        <div class="card border-0 shadow-sm text-center py-2">
+                            <div class="card-body p-2">
+                                <i class="fas fa-file-alt text-secondary fa-lg"></i>
+                                <h4 class="mb-0 mt-1 fw-bold">{{ $myDocsSummary['drafts'] ?? 0 }}</h4>
+                                <small class="text-muted">Drafts</small>
+                                <br><a href="{{ route('documents.my-uploads', ['type' => 'all', 'status' => 'draft']) }}"
+                                    class="small">View</a>
                             </div>
-                            <div class="p-2 border-top">
-                                {{ $myDocs->links() }}
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="card border-0 shadow-sm text-center py-2">
+                            <div class="card-body p-2">
+                                <i class="fas fa-clock text-secondary fa-lg"></i>
+                                <h4 class="mb-0 mt-1 fw-bold">{{ $myDocsSummary['pending'] ?? 0 }}</h4>
+                                <small class="text-muted">Pending Review</small>
+                                <br><a href="{{ route('documents.my-uploads', ['type' => 'all', 'status' => 'pending']) }}"
+                                    class="small">View</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="card border-0 shadow-sm text-center py-2">
+                            <div class="card-body p-2">
+                                <i class="fas fa-check-circle text-secondary fa-lg"></i>
+                                <h4 class="mb-0 mt-1 fw-bold">{{ $myDocsSummary['approved'] ?? 0 }}</h4>
+                                <small class="text-muted">Approved</small>
+                                <br><a
+                                    href="{{ route('documents.my-uploads', ['type' => 'all', 'status' => 'approved']) }}"
+                                    class="small">View</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="card border-0 shadow-sm text-center py-2">
+                            <div class="card-body p-2">
+                                <i class="fas fa-times-circle text-secondary fa-lg"></i>
+                                <h4 class="mb-0 mt-1 fw-bold">{{ $myDocsSummary['rejected'] ?? 0 }}</h4>
+                                <small class="text-muted">Rejected</small>
+                                <br><a
+                                    href="{{ route('documents.my-uploads', ['type' => 'all', 'status' => 'rejected']) }}"
+                                    class="small">View</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity on Your Documents -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">Recent Activity on Your Documents</div>
+                    <div class="card-body p-0">
+                        @if ($activities->count())
+                            <div class="list-group list-group-flush">
+                                @foreach ($activities as $activity)
+                                    <a href="{{ route('document.show', $activity->doc_id) }}"
+                                        class="list-group-item list-group-item-action">
+                                        <div class="d-flex align-items-center">
+                                            @if ($activity->type == 'comment')
+                                                <i class="fas fa-comment text-info me-3 fa-fw"></i>
+                                            @elseif($activity->type == 'like')
+                                                <i class="fas fa-thumbs-up text-success me-3 fa-fw"></i>
+                                            @else
+                                                <i class="fas fa-info-circle text-secondary me-3 fa-fw"></i>
+                                            @endif
+                                            <div class="flex-grow-1">
+                                                <strong>{{ $activity->doc_title }}</strong><br>
+                                                <small>{{ $activity->message }}</small>
+                                            </div>
+                                            <small
+                                                class="text-muted">{{ \Carbon\Carbon::parse($activity->created_at)->diffForHumans() }}</small>
+                                        </div>
+                                    </a>
+                                @endforeach
                             </div>
                         @else
-                            <p class="text-muted text-center py-3">You haven't uploaded any documents yet.</p>
+                            <p class="text-muted text-center py-3 mb-0">No recent activity on your documents.</p>
                         @endif
                     </div>
                 </div>

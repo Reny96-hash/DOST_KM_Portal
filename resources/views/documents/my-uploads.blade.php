@@ -11,9 +11,12 @@
                     <i class="fas fa-plus"></i> Create
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{{ route('content.create') }}?type=article">Article</a></li>
-                    <li><a class="dropdown-item" href="{{ route('content.create') }}?type=file">File</a></li>
-                    <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addLinkModal">Link</a></li>
+                    <li><a class="dropdown-item" href="{{ route('content.create') }}?type=article"><i
+                                class="fas fa-newspaper"></i> Article</a></li>
+                    <li><a class="dropdown-item" href="{{ route('content.create') }}?type=file"><i class="fas fa-file"></i>
+                            File</a></li>
+                    <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#addLinkModal"><i
+                                class="fas fa-link"></i> Link</a></li>
                 </ul>
             </div>
         </div>

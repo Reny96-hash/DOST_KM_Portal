@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class DocumentController extends Controller
 {
@@ -209,15 +210,28 @@ class DocumentController extends Controller
 public function myUploads(Request $request)
 {
     $type = $request->get('type', 'all');
+    $status = $request->get('status'); // draft, pending, approved, rejected
     $sort = $request->get('sort', 'date');
     $direction = $request->get('direction', 'desc');
 
-    $query = Document::where('user_id', auth()->user()->user_id);
+    $query = Document::where('user_id', auth()->id());
 
     if ($type !== 'all') {
         $query->where('content_type', $type);
     }
 
+    // Filter by status (distinguish draft and rejected)
+    if ($status === 'draft') {
+    $query->where('doc_status', 'draft')->where('approval_status', 'pending');
+} elseif ($status === 'pending') {
+        $query->where('doc_status', 'pending');
+    } elseif ($status === 'approved') {
+        $query->where('approval_status', 'approved');
+    } elseif ($status === 'rejected') {
+        $query->where('approval_status', 'rejected');
+    }
+
+    // Sorting
     switch ($sort) {
         case 'title': $query->orderBy('doc_title', $direction); break;
         case 'category': $query->orderBy('doc_category', $direction); break;
@@ -232,7 +246,7 @@ public function myUploads(Request $request)
     // ------------------------------------------------------------------
     // DASHBOARD (UPDATED with  questions, and new stats)
     // ------------------------------------------------------------------
-   public function index(Request $request)
+public function index(Request $request)
 {
     $user = auth()->user();
 
@@ -249,12 +263,68 @@ public function myUploads(Request $request)
     $recentDocuments = $visibleDocuments->sortByDesc('created_at')->take(5);
     $mostViewedDocuments = $visibleDocuments->sortByDesc('view_count')->take(5);
 
-    // For staff: their own documents (paginated)
-    $myDocs = collect();
+    // Staff-specific summary (counts for the dashboard cards)
+    $myDocsSummary = [
+        'drafts'   => Document::where('user_id', $user->user_id)
+                        ->where('doc_status', 'draft')
+                        ->where('approval_status', 'pending')   // true drafts only
+                        ->count(),
+        'pending'  => Document::where('user_id', $user->user_id)
+                        ->where('doc_status', 'pending')
+                        ->count(),
+        'approved' => Document::where('user_id', $user->user_id)
+                        ->where('approval_status', 'approved')
+                        ->count(),
+        'rejected' => Document::where('user_id', $user->user_id)
+                        ->where('approval_status', 'rejected')
+                        ->count(),
+    ];
+
+    $activities = collect();
+
     if (!$user->isAdmin() && !$user->isKmChampion()) {
-        $myDocs = Document::where('user_id', $user->user_id)
-                          ->orderBy('created_at', 'desc')
-                          ->paginate(10);
+        // 1. Approval/rejection comments
+        $approvalEvents = DB::table('tbl_approval_comments as ac')
+            ->join('tbl_documents as d', 'ac.doc_id', '=', 'd.doc_id')
+            ->where('d.user_id', $user->user_id)
+            ->select('ac.created_at', 'ac.comment', 'd.doc_title', 'd.doc_id')
+            ->orderBy('ac.created_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        foreach ($approvalEvents as $event) {
+            $activities->push((object)[
+                'doc_id'    => $event->doc_id,
+                'doc_title' => $event->doc_title,
+                'message'   => 'Admin comment: ' . Str::limit($event->comment, 80),
+                'type'      => 'comment',
+                'created_at'=> $event->created_at,
+            ]);
+        }
+
+        // 2. Comments from other users
+        $commentEvents = DB::table('tbl_comments as c')
+            ->join('tbl_documents as d', 'c.doc_id', '=', 'd.doc_id')
+            ->leftJoin('tbl_users as u', 'c.user_id', '=', 'u.user_id')
+            ->where('d.user_id', $user->user_id)
+            ->where('c.user_id', '!=', $user->user_id)
+            ->select('c.created_at', 'c.comment_text', 'd.doc_title', 'd.doc_id', 'u.user_first_name')
+            ->orderBy('c.created_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        foreach ($commentEvents as $event) {
+            $activities->push((object)[
+                'doc_id'    => $event->doc_id,
+                'doc_title' => $event->doc_title,
+                'message'   => ($event->user_first_name ?? 'Someone') . ' commented: ' . Str::limit($event->comment_text, 80),
+                'type'      => 'comment',
+                'created_at'=> $event->created_at,
+            ]);
+        }
+
+        // Sort activities and take latest 10
+        $activities = $activities->sortByDesc('created_at')->take(10);
     }
 
     // Charts data for Admin and KM Champion
@@ -276,7 +346,8 @@ public function myUploads(Request $request)
     return view('dashboard', compact(
         'recentDocuments',
         'mostViewedDocuments',
-        'myDocs',
+        'myDocsSummary',
+        'activities',
         'categoryStats',
         'clearanceStats'
     ));
@@ -296,11 +367,13 @@ public function categoryShow(Request $request, $name)
 {
     $user = auth()->user();
     $type = $request->get('type', 'all');
-$search = $request->get('search');
+
+    // Base query
     $query = Document::where('doc_category', $name)
         ->where('approval_status', 'approved')
         ->where('doc_status', 'published');
 
+    // Apply type filter
     if ($type === 'article') {
         $query->where('content_type', 'article')->where('is_question', false);
     } elseif ($type === 'file') {
@@ -310,30 +383,37 @@ $search = $request->get('search');
     } elseif ($type === 'question') {
         $query->where('is_question', true);
     }
-    // 'all' shows everything (including questions, articles, files, links)
- if ($type !== 'all') {
-        $query->where('content_type', $type);
-    }
+    // 'all' shows everything (including questions)
 
-    if ($search) {
+    // Apply search (if any)
+    if ($request->filled('search')) {
+        $search = $request->search;
         $query->where(function($q) use ($search) {
             $q->where('doc_title', 'like', "%{$search}%")
               ->orWhere('doc_description', 'like', "%{$search}%");
         });
     }
 
-    // sorting
+    // Sorting
     $sort = $request->get('sort', 'newest');
-    if ($sort === 'oldest') {
-        $query->orderBy('created_at', 'asc');
-    } else {
-        $query->orderBy('created_at', 'desc');
-    }
+    $query->orderBy('created_at', $sort === 'oldest' ? 'asc' : 'desc');
 
-    $documents = $query->orderBy('created_at', 'desc')->paginate(12);
-    $documents->getCollection()->filter(fn($doc) => $user->canViewDocument($doc->security_clearance));
+    // Get results and filter by clearance
+    $allDocs = $query->get();
+    $visibleDocs = $allDocs->filter(fn($doc) => $user->canViewDocument($doc->security_clearance));
 
-    return view('categories.show', compact('documents', 'name', 'type', 'sort', 'search'));
+    // Paginate
+    $perPage = 12;
+    $currentPage = $request->get('page', 1);
+    $documents = new \Illuminate\Pagination\LengthAwarePaginator(
+        $visibleDocs->forPage($currentPage, $perPage),
+        $visibleDocs->count(),
+        $perPage,
+        $currentPage,
+        ['path' => $request->url(), 'query' => $request->query()]
+    );
+
+    return view('categories.show', compact('documents', 'name', 'type'));
 }
 public function autocompleteCategory(Request $request, $name)
 {
@@ -525,53 +605,51 @@ $bookmarked = \DB::table('tbl_bookmarks')
     // ------------------------------------------------------------------
     // AJAX & UTILITY METHODS
     // ------------------------------------------------------------------
-    public function fetchDocuments(Request $request)
-    {
-        $user = auth()->user();
+public function fetchDocuments(Request $request)
+{
+    // Only allow AJAX requests
+    if (!$request->ajax()) {
+        return redirect()->route('dashboard');
+    }
 
-        $query = Document::where('approval_status', 'approved')
-                         ->where('doc_status', 'published');
- if ($request->filled('category')) {
+    $user = auth()->user();
+    $query = Document::where('approval_status', 'approved')
+                     ->where('doc_status', 'published');
+
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('doc_title', 'like', "%{$search}%")
+              ->orWhere('doc_description', 'like', "%{$search}%");
+        });
+    }
+
+    if ($request->filled('category')) {
         $query->where('doc_category', $request->category);
     }
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('doc_title', 'like', "%{$search}%")
-                  ->orWhere('doc_description', 'like', "%{$search}%");
-            });
-        }
 
-        if ($request->filled('category')) {
-            $query->where('doc_category', $request->category);
-        }
+    $sort = $request->get('sort', 'newest');
+    $query->orderBy('created_at', $sort === 'oldest' ? 'asc' : 'desc');
 
-        $sort = $request->get('sort', 'newest');
-        $query->orderBy('created_at', $sort === 'oldest' ? 'asc' : 'desc');
+    $allDocuments = $query->get();
+    $visibleDocuments = $allDocuments->filter(function($doc) use ($user) {
+        return $user->canViewDocument($doc->security_clearance) ||
+               ($doc->user_id == $user->user_id && $doc->approval_status == 'approved');
+    });
 
-        $allDocuments = $query->get();
-        $visibleDocuments = $allDocuments->filter(function($doc) use ($user) {
-            return $user->canViewDocument($doc->security_clearance) ||
-                   ($doc->user_id == $user->user_id && $doc->approval_status == 'approved');
-        });
+    $currentPage = $request->get('page', 1);
+    $perPage = 10;
+    $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+        $visibleDocuments->forPage($currentPage, $perPage),
+        $visibleDocuments->count(),
+        $perPage,
+        $currentPage,
+        ['path' => $request->url(), 'query' => $request->query()]
+    );
 
-        $currentPage = $request->get('page', 1);
-        $perPage = 10;
-        $paginatedDocuments = new \Illuminate\Pagination\LengthAwarePaginator(
-            $visibleDocuments->forPage($currentPage, $perPage),
-            $visibleDocuments->count(),
-            $perPage,
-            $currentPage,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
-
-        if ($request->ajax()) {
-            $html = view('partials.document-table', ['paginatedDocuments' => $paginatedDocuments])->render();
-            return response()->json(['html' => $html]);
-        }
-
-        return view('dashboard', compact('paginatedDocuments'));
-    }
+    $html = view('partials.document-table', ['paginatedDocuments' => $paginated])->render();
+    return response()->json(['html' => $html]);
+}
 
     public function autocomplete(Request $request)
     {
@@ -675,71 +753,90 @@ $bookmarked = \DB::table('tbl_bookmarks')
         return response()->file($path, ['Content-Type' => mime_content_type($path)]);
     }
 
-    // search() method – keep as is (unchanged from your old controller)
     public function search(Request $request)
-    {
-        $user = auth()->user();
+{
+    $user = auth()->user();
 
-        $query = Document::where('approval_status', 'approved')
-                         ->where('doc_status', 'published');
+    $query = Document::where('approval_status', 'approved')
+                     ->where('doc_status', 'published');
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('doc_title', 'like', "%{$search}%")
-                  ->orWhere('doc_description', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('category')) {
-            $query->where('doc_category', $request->category);
-        }
-
-        $sort = $request->get('sort', 'newest');
-        $query->orderBy('created_at', $sort === 'oldest' ? 'asc' : 'desc');
-
-        $allDocuments = $query->get();
-        $visibleDocuments = $allDocuments->filter(function($doc) use ($user) {
-            return $user->canViewDocument($doc->security_clearance) ||
-                   ($doc->user_id == $user->user_id && $doc->approval_status == 'approved');
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('doc_title', 'like', "%{$search}%")
+              ->orWhere('doc_description', 'like', "%{$search}%");
         });
-
-        $currentPage = $request->get('page', 1);
-        $perPage = 10;
-        $paginatedDocuments = new \Illuminate\Pagination\LengthAwarePaginator(
-            $visibleDocuments->forPage($currentPage, $perPage),
-            $visibleDocuments->count(),
-            $perPage,
-            $currentPage,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
-
-        if (!$user->isAdmin() && !$user->isKmChampion()) {
-            $approvedDocumentsCount = $visibleDocuments->count();
-            $pendingDocumentsCount = 0;
-            $imagesCount = $visibleDocuments->whereIn('doc_file_type', ['jpg','jpeg','png','gif'])->count();
-            $totalUsers = 1;
-            $kmChampionCount = 0;
-            $adminCount = 0;
-            $staffCount = 0;
-        } else {
-            $approvedDocumentsCount = Document::where('approval_status', 'approved')->count();
-            $pendingDocumentsCount = Document::where('approval_status', 'pending')->count();
-            $imagesCount = Document::whereIn('doc_file_type', ['jpg','jpeg','png','gif'])->count();
-            $totalUsers = User::count();
-            $kmChampionCount = User::where('user_role', 'km_champion')->count();
-            $adminCount = User::where('user_role', 'admin')->count();
-            $staffCount = User::where('user_role', 'staff')->count();
-        }
-
-        $categories = DB::table('tbl_categories')->pluck('cat_name')->toArray();
-        $recentDocuments = $visibleDocuments->sortByDesc('created_at')->take(5);
-        $mostViewedDocuments = $visibleDocuments->sortByDesc('view_count')->take(5);
-
-        return view('dashboard', compact(
-            'paginatedDocuments', 'categories', 'approvedDocumentsCount', 'pendingDocumentsCount',
-            'imagesCount', 'totalUsers', 'kmChampionCount', 'adminCount', 'staffCount',
-            'recentDocuments', 'mostViewedDocuments', 'sort'
-        ));
     }
+
+    if ($request->filled('category')) {
+        $query->where('doc_category', $request->category);
+    }
+
+    $sort = $request->get('sort', 'newest');
+    $query->orderBy('created_at', $sort === 'oldest' ? 'asc' : 'desc');
+
+    $allDocuments = $query->get();
+    $visibleDocuments = $allDocuments->filter(function($doc) use ($user) {
+        return $user->canViewDocument($doc->security_clearance) ||
+               ($doc->user_id == $user->user_id && $doc->approval_status == 'approved');
+    });
+
+    // Paginate
+    $currentPage = $request->get('page', 1);
+    $perPage = 10;
+    $paginatedDocuments = new \Illuminate\Pagination\LengthAwarePaginator(
+        $visibleDocuments->forPage($currentPage, $perPage),
+        $visibleDocuments->count(),
+        $perPage,
+        $currentPage,
+        ['path' => $request->url(), 'query' => $request->query()]
+    );
+
+    // === STATISTICS (same as index) ===
+    if (!$user->isAdmin() && !$user->isKmChampion()) {
+        $approvedDocumentsCount = $visibleDocuments->count();
+        $pendingDocumentsCount = 0;
+        $imagesCount = $visibleDocuments->whereIn('doc_file_type', ['jpg','jpeg','png','gif'])->count();
+        $totalUsers = 1;
+        $kmChampionCount = 0;
+        $adminCount = 0;
+        $staffCount = 0;
+    } else {
+        $approvedDocumentsCount = Document::where('approval_status', 'approved')->count();
+        $pendingDocumentsCount = Document::where('approval_status', 'pending')->count();
+        $imagesCount = Document::whereIn('doc_file_type', ['jpg','jpeg','png','gif'])->count();
+        $totalUsers = User::count();
+        $kmChampionCount = User::where('user_role', 'km_champion')->count();
+        $adminCount = User::where('user_role', 'admin')->count();
+        $staffCount = User::where('user_role', 'staff')->count();
+    }
+
+    $categories = DB::table('tbl_categories')->pluck('cat_name')->toArray();
+
+    $recentDocuments = $visibleDocuments->sortByDesc('created_at')->take(5);
+    $mostViewedDocuments = $visibleDocuments->sortByDesc('view_count')->take(5);
+
+    // Chart data for admin/km champion
+    $categoryStats = collect();
+    $clearanceStats = collect();
+    if ($user->isAdmin() || $user->isKmChampion()) {
+        $categoryStats = Document::where('approval_status', 'approved')
+            ->select('doc_category', \DB::raw('count(*) as count'))
+            ->whereNotNull('doc_category')
+            ->groupBy('doc_category')
+            ->pluck('count', 'doc_category');
+
+        $clearanceStats = Document::where('approval_status', 'approved')
+            ->select('security_clearance', \DB::raw('count(*) as count'))
+            ->groupBy('security_clearance')
+            ->pluck('count', 'security_clearance');
+    }
+    // =================================
+
+    return view('dashboard', compact(
+        'paginatedDocuments', 'categories', 'approvedDocumentsCount', 'pendingDocumentsCount',
+        'imagesCount', 'totalUsers', 'kmChampionCount', 'adminCount', 'staffCount',
+        'recentDocuments', 'mostViewedDocuments', 'sort', 'categoryStats', 'clearanceStats'
+    ));
+}
 }

@@ -256,8 +256,8 @@
                 </form>
 
                 <div class="links">
-                    <a href="#">Forgot Password?</a>
-                    <span class="mx-2">|</span>
+                    {{-- <a href="#">Forgot Password?</a>
+                    <span class="mx-2">|</span> --}}
                     <a href="{{ route('register') }}">First-Time Setup</a>
                 </div>
             </div>
